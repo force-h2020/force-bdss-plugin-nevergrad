@@ -13,7 +13,6 @@ ADDITIONAL_CORE_DEPS = [
 ]
 
 ADDITIONAL_PIP_DEPS = [
- "stevedore==1.30.1",
  "git+https://github.com/facebookresearch/nevergrad.git@" +
  _nevergrad_stable_commit
 ]
