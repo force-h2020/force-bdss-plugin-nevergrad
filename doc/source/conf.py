@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "..", "..")
     )
 
-from force_gromacs.version import __version__ as RELEASE
+from force_nevergrad.version import __version__ as RELEASE
 
 sphinx.environment.BuildEnvironment.warn_node = _warn_node
 
