@@ -108,7 +108,7 @@ def docs(python_version, apidoc_only, html_only):
 
     env_name = get_env_name(python_version)
     doc_api = os.path.abspath(os.path.join("doc", "source", "api"))
-    package = os.path.abspath("force_gromacs")
+    package = os.path.abspath("force_nevergrad")
 
     if not html_only:
         click.echo("Generating API doc")
