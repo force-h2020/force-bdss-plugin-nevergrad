@@ -26,7 +26,8 @@ setup(
     version=VERSION,
     entry_points={
             "force.bdss.extensions": [
-                "force_nevergrad = "
+                "force_nevergrad = ",
+                "force_nevergrad.nevergrad_plugin:NevergradPlugin"
             ]
         },
     packages=find_packages(),
