@@ -1,5 +1,7 @@
 from force_bdss.api import BaseExtensionPlugin, plugin_id
 
+from force_nevergrad.mco.ng_mco_factory import NevergradMCOFactory
+
 PLUGIN_VERSION = 0
 
 
@@ -24,5 +26,4 @@ class NevergradPlugin(BaseExtensionPlugin):
 
     #: Define the factory classes that you want to export to this list.
     def get_factory_classes(self):
-        return [
-        ]
+        return [NevergradMCOFactory]
