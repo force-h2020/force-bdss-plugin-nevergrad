@@ -9,6 +9,12 @@ log = logging.getLogger(__name__)
 
 
 class NevergradMCO(BaseMCO):
+    """ Base Nevergrad MCO class to run gradient-free global optimization.
+
+    The `run` method will perform ".optimize" operation using the
+    Nevergrad OptimizerEngine. User should overload this method and
+    implement / extend it for custom MCO run.
+    """
     def run(self, evaluator):
         model = evaluator.mco_model
 
