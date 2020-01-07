@@ -12,6 +12,12 @@ from .ng_mco import NevergradMCO
 
 
 class NevergradMCOFactory(BaseMCOFactory):
+    """ Base NevergradMCO Factory with generic configuration.
+    Users might want to add custom MCOCommunicator instead of the
+    BaseMCOCommunicator. Also, the parameter_factory method can
+    be updated for custom MCOParameterFactories.
+    """
+
     def get_identifier(self):
         return "nevergrad_mco"
 

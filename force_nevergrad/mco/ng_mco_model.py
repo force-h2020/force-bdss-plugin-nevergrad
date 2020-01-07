@@ -7,6 +7,8 @@ from force_nevergrad.engine.nevergrad_engine import NevergradOptimizerEngine
 
 
 class NevergradMCOModel(BaseMCOModel):
+    """ Base NevergradMCO Model class. Contains necessary traits attribute
+    data to configure the NevergradOptimizerEngine."""
 
     #: Algorithms available to work with
     algorithms = Enum(
