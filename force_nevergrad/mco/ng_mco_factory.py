@@ -11,14 +11,6 @@ from .ng_mco_model import NevergradMCOModel
 from .ng_mco import NevergradMCO
 
 
-class MCOCommunicator(BaseMCOCommunicator):
-    def send_to_mco(self, model, kpi_results):
-        pass
-
-    def receive_from_mco(self, model):
-        pass
-
-
 class NevergradMCOFactory(BaseMCOFactory):
     def get_identifier(self):
         return "nevergrad_mco"
@@ -36,7 +28,7 @@ class NevergradMCOFactory(BaseMCOFactory):
 
     #: Returns the communicator class
     def get_communicator_class(self):
-        return MCOCommunicator
+        return BaseMCOCommunicator
 
     #: Factory classes of the parameters the MCO supports.
     def get_parameter_factory_classes(self):
