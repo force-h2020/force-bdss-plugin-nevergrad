@@ -28,8 +28,8 @@ before_install:
     - if [[ ${TRAVIS_OS_NAME} == "osx" ]]; then export PATH="${PATH}:/usr/local/bin" ; fi
     - edm install -y --version 3.6 click setuptools
     - git clone git://github.com/force-h2020/force-bdss.git
-    - git checkout dev/core-optimizer-engine
-    - pushd force-bdss && edm run -- python -m ci build-env && edm run -- python -m ci install && popd
+    - pushd force-bdss && git checkout dev/core-optimizer-engine
+    - edm run -- python -m ci build-env && edm run -- python -m ci install && popd
 script:
     - edm run -- python -m ci install
     - edm run -- python -m ci flake8
