@@ -71,7 +71,7 @@ class TestMCO(TestCase, UnittestTools):
         evaluator = WorkflowEvaluator(
             workflow=Workflow(), workflow_filepath="whatever"
         )
-        evaluator.workflow.mco = model
+        evaluator.workflow.mco_model = model
         kpis = [DataValue(value=1), DataValue(value=2)]
         with self.assertTraitChanges(mco, "event", count=61):
             with mock.patch(
