@@ -1,6 +1,7 @@
 from unittest import TestCase, mock
 import nevergrad as ng
-from nevergrad.instrumentation.transforms import ArctanBound
+from nevergrad.parametrization.transforms import ArctanBound
+from nevergrad.parametrization import core as ng_core
 
 from force_bdss.api import (
     KPISpecification,
@@ -67,7 +68,7 @@ class TestNevergradOptimizerEngine(TestCase):
         fixed_variable = self.optimizer._create_instrumentation_variable(
             fixed_variable
         )
-        self.assertIsInstance(fixed_variable, ng.var._Constant)
+        self.assertIsInstance(fixed_variable, ng_core.Constant)
         self.assertEqual(42, fixed_variable.value)
 
         ranged_variable = RangedMCOParameterFactory(mock_factory).create_model(
@@ -76,11 +77,14 @@ class TestNevergradOptimizerEngine(TestCase):
         ranged_variable = self.optimizer._create_instrumentation_variable(
             ranged_variable
         )
-        self.assertIsInstance(ranged_variable, ng.var.Scalar)
-        self.assertEqual(1, len(ranged_variable.transforms))
-        self.assertEqual(3.14, ranged_variable.transforms[0].a_max[0])
-        self.assertEqual(-1.0, ranged_variable.transforms[0].a_min[0])
-        self.assertIsInstance(ranged_variable.transforms[0], ArctanBound)
+        self.assertIsInstance(ranged_variable, ng.p.Scalar)
+        self.assertListEqual(
+            [3.14], list(ranged_variable.bound_transform.a_max)
+        )
+        self.assertListEqual(
+            [-1.0], list(ranged_variable.bound_transform.a_min)
+        )
+        self.assertIsInstance(ranged_variable.bound_transform, ArctanBound)
 
         listed_variable = ListedMCOParameterFactory(mock_factory).create_model(
             data_values={"levels": [2.0, 1.0, 0.0]}
@@ -88,8 +92,10 @@ class TestNevergradOptimizerEngine(TestCase):
         listed_variable = self.optimizer._create_instrumentation_variable(
             listed_variable
         )
-        self.assertIsInstance(listed_variable, ng.var.OrderedDiscrete)
-        self.assertListEqual([0.0, 1.0, 2.0], listed_variable.possibilities)
+        self.assertIsInstance(listed_variable, ng.p.TransitionChoice)
+        self.assertListEqual(
+            [0.0, 1.0, 2.0], list(listed_variable.choices.value)
+        )
 
         categorical_variable = CategoricalMCOParameterFactory(
             mock_factory
@@ -97,9 +103,9 @@ class TestNevergradOptimizerEngine(TestCase):
         categorical_variable = self.optimizer._create_instrumentation_variable(
             categorical_variable
         )
-        self.assertIsInstance(categorical_variable, ng.var.SoftmaxCategorical)
+        self.assertIsInstance(categorical_variable, ng.p.Choice)
         self.assertListEqual(
-            ["2.0", "1.0", "0.0"], categorical_variable.possibilities
+            ["2.0", "1.0", "0.0"], list(categorical_variable.choices.value)
         )
 
         with self.assertRaises(NevergradTypeError):
@@ -114,22 +120,20 @@ class TestNevergradOptimizerEngine(TestCase):
         for i, parameter in enumerate(self.optimizer.parameters):
             self.assertListEqual(
                 [parameter.upper_bound],
-                list(instrumentation.args[i].transforms[0].a_max),
+                list(instrumentation[0][i].bound_transform.a_max),
             )
             self.assertListEqual(
                 [parameter.lower_bound],
-                list(instrumentation.args[i].transforms[0].a_min),
+                list(instrumentation[0][i].bound_transform.a_min),
             )
 
         # Create instrumentation from unbound parameters
         parameter = self.optimizer.parameters[0]
         instrumentation = self.optimizer._assemble_instrumentation([parameter])
-        args = [
-            instrumentation.args[i] for i in range(len(instrumentation.args))
-        ]
+        args = instrumentation[0]
         self.assertEqual(1, len(args))
         self.assertListEqual(
-            [parameter.upper_bound], list(args[0].transforms[0].a_max)
+            [parameter.upper_bound], list(args[0].bound_transform.a_max)
         )
 
     def test__create_kpi_bounds(self):
@@ -145,5 +149,7 @@ class TestNevergradOptimizerEngine(TestCase):
         self.assertEqual(self.mocked_optimizer.budget, len(optimized_data))
 
         self.mocked_optimizer.verbose_run = False
-        optimized_data = list(self.mocked_optimizer.optimize())
-        self.assertEqual(7, len(optimized_data))
+        for optimized_data in self.mocked_optimizer.optimize():
+            self.assertEqual(4, len(optimized_data[0]))
+            self.assertEqual(2, len(optimized_data[1]))
+            self.assertListEqual([1, 1], optimized_data[2])
