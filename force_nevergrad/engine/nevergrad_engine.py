@@ -138,9 +138,9 @@ class NevergradOptimizerEngine(BaseOptimizerEngine):
             ng_optimizer.tell(x, volume)
 
             if self.verbose_run:
-                yield x.args, value, [1] * len(self.kpis)
+                yield x.args, value
 
         if not self.verbose_run:
             for point, value in f._points:
                 value = self._minimization_score(value)
-                yield point[0], value, [1] * len(self.kpis)
+                yield point[0], value

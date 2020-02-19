@@ -152,4 +152,3 @@ class TestNevergradOptimizerEngine(TestCase):
         for optimized_data in self.mocked_optimizer.optimize():
             self.assertEqual(4, len(optimized_data[0]))
             self.assertEqual(2, len(optimized_data[1]))
-            self.assertListEqual([1, 1], optimized_data[2])
