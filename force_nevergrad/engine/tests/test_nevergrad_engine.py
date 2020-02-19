@@ -113,7 +113,7 @@ class TestNevergradOptimizerEngine(TestCase):
 
     def test__create_instrumentation(self):
         instrumentation = self.optimizer._assemble_instrumentation()
-        self.assertIsInstance(instrumentation, ng.Instrumentation)
+        self.assertIsInstance(instrumentation, ng.p.Instrumentation)
         self.assertEqual(
             len(self.optimizer.parameters), len(instrumentation.args)
         )

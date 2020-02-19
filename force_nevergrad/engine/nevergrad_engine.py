@@ -89,7 +89,7 @@ class NevergradOptimizerEngine(BaseOptimizerEngine):
         instrumentation = [
             self._create_instrumentation_variable(p) for p in parameters
         ]
-        return ng.Instrumentation(*instrumentation)
+        return ng.p.Instrumentation(*instrumentation)
 
     def _get_kpi_bounds(self):
         """ Assemble optimization bounds on KPIs, provided by
@@ -127,7 +127,7 @@ class NevergradOptimizerEngine(BaseOptimizerEngine):
         instrumentation = self._assemble_instrumentation()
         instrumentation.random_state.seed(12)
         ng_optimizer = ng.optimizers.registry[self.algorithms](
-            instrumentation=instrumentation, budget=self.budget
+            parametrization=instrumentation, budget=self.budget
         )
         for _ in range(ng_optimizer.budget):
             x = ng_optimizer.ask()
