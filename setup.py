@@ -5,7 +5,7 @@ VERSION = "0.1.0.dev0"
 
 
 # Read description
-with open('README.md', 'r') as readme:
+with open('README.rst', 'r') as readme:
     README_TEXT = readme.read()
 
 
@@ -32,6 +32,6 @@ setup(
         },
     packages=find_packages(),
     install_requires=[
-            "force_bdss >= 0.3.0",
+            "force_bdss >= 0.4.0",
         ]
 )
