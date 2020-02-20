@@ -133,3 +133,6 @@ dmypy.json
 
 # FORCE project
 version.py
+
+# MacOS
+*.DS_Store
