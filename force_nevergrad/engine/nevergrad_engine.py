@@ -2,6 +2,7 @@ import logging
 import numpy as np
 import nevergrad as ng
 from nevergrad.functions import MultiobjectiveFunction
+from nevergrad.parametrization import core as ng_core
 
 from traits.api import Enum, Unicode, Property
 
@@ -52,23 +53,17 @@ class NevergradOptimizerEngine(BaseOptimizerEngine):
         if hasattr(parameter, "lower_bound") and hasattr(
             parameter, "upper_bound"
         ):
-            # The affine transformation with `slope` before `bounded` cab be
-            # used to normalize the distribution of points in internal space.
-            # This allows better exploration of the boundary regions. This
-            # feature is still in research mode, and presumably must be for
-            # the user to play with. Implementation would be:
-            # >>> affine_slope = 1.0
-            # >>> var = ng.var.Scalar().affined(affine_slope, 0).bounded(...)
-            return ng.var.Scalar().bounded(
-                parameter.lower_bound, parameter.upper_bound
+            mid_point = parameter.initial_value
+            return ng.p.Scalar(mid_point).set_bounds(
+                parameter.lower_bound, parameter.upper_bound, method="arctan"
             )
         elif hasattr(parameter, "value"):
-            return ng.var._Constant(value=parameter.value)
+            return ng_core.Constant(value=parameter.value)
         elif hasattr(parameter, "levels"):
-            return ng.var.OrderedDiscrete(parameter.sample_values)
+            return ng.p.TransitionChoice(parameter.sample_values)
         elif hasattr(parameter, "categories"):
-            return ng.var.SoftmaxCategorical(
-                possibilities=parameter.sample_values, deterministic=True
+            return ng.p.Choice(
+                choices=parameter.sample_values, deterministic=True
             )
         else:
             raise NevergradTypeError(
@@ -94,7 +89,7 @@ class NevergradOptimizerEngine(BaseOptimizerEngine):
         instrumentation = [
             self._create_instrumentation_variable(p) for p in parameters
         ]
-        return ng.Instrumentation(*instrumentation)
+        return ng.p.Instrumentation(*instrumentation)
 
     def _get_kpi_bounds(self):
         """ Assemble optimization bounds on KPIs, provided by
@@ -132,7 +127,7 @@ class NevergradOptimizerEngine(BaseOptimizerEngine):
         instrumentation = self._assemble_instrumentation()
         instrumentation.random_state.seed(12)
         ng_optimizer = ng.optimizers.registry[self.algorithms](
-            instrumentation=instrumentation, budget=self.budget
+            parametrization=instrumentation, budget=self.budget
         )
         for _ in range(ng_optimizer.budget):
             x = ng_optimizer.ask()
@@ -143,9 +138,9 @@ class NevergradOptimizerEngine(BaseOptimizerEngine):
             ng_optimizer.tell(x, volume)
 
             if self.verbose_run:
-                yield x.args, value, [1] * len(self.kpis)
+                yield x.args, value
 
         if not self.verbose_run:
             for point, value in f._points:
                 value = self._minimization_score(value)
-                yield point[0], value, [1] * len(self.kpis)
+                yield point[0], value

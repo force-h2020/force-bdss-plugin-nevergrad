@@ -3,7 +3,6 @@ from unittest import TestCase, mock
 from traits.testing.unittest_tools import UnittestTools
 
 from force_bdss.api import (
-    WorkflowEvaluator,
     KPISpecification,
     Workflow,
     DataValue,
@@ -14,7 +13,7 @@ from force_bdss.api import (
     ListedMCOParameter,
     RangedMCOParameter,
     CategoricalMCOParameterFactory,
-    CategoricalMCOParameter
+    CategoricalMCOParameter,
 )
 
 from force_nevergrad.nevergrad_plugin import NevergradPlugin
@@ -68,14 +67,12 @@ class TestMCO(TestCase, UnittestTools):
         model.parameters = self.parameters
         model.kpis = [KPISpecification(), KPISpecification()]
 
-        evaluator = WorkflowEvaluator(
-            workflow=Workflow(), workflow_filepath="whatever"
-        )
-        evaluator.workflow.mco_model = model
+        workflow = Workflow()
+        workflow.mco_model = model
         kpis = [DataValue(value=1), DataValue(value=2)]
-        with self.assertTraitChanges(mco, "event", count=61):
+        with self.assertTraitChanges(model, "event", count=61):
             with mock.patch(
                 "force_bdss.api.Workflow.execute", return_value=kpis
             ) as mock_exec:
-                mco.run(evaluator)
+                mco.run(workflow)
                 self.assertEqual(61, mock_exec.call_count)
