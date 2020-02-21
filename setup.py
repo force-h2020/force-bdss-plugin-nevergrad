@@ -5,7 +5,7 @@ VERSION = "0.1.0.dev0"
 
 
 # Read description
-with open('README.md', 'r') as readme:
+with open('README.rst', 'r') as readme:
     README_TEXT = readme.read()
 
 
