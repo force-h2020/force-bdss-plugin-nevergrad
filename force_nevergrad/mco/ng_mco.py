@@ -32,10 +32,7 @@ class NevergradMCO(BaseMCO):
 
         log.info("Doing MCO run")
 
-        for (
-            optimal_point,
-            optimal_kpis,
-        ) in optimizer.optimize():
+        for (optimal_point, optimal_kpis) in optimizer.optimize():
             # When there is new data, this operation informs the system that
             # new data has been received. It must be a dictionary as given.
             readable_points = [
@@ -48,9 +45,9 @@ class NevergradMCO(BaseMCO):
 
 
 def get_labels(parameters):
-    label_set = set(
-        parameter
+    labels = {
+        parameter: None
         for parameter in parameters
         if hasattr(parameter, "categories")
-    )
-    return {index: value for index, value in enumerate(label_set, start=1)}
+    }
+    return {index: value for index, value in enumerate(labels.keys(), start=1)}
