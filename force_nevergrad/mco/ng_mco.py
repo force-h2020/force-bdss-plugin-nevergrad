@@ -15,6 +15,7 @@ class NevergradMCO(BaseMCO):
     Nevergrad OptimizerEngine. User should overload this method and
     implement / extend it for custom MCO run.
     """
+
     def run(self, evaluator):
         model = evaluator.mco_model
 
@@ -31,11 +32,7 @@ class NevergradMCO(BaseMCO):
 
         log.info("Doing MCO run")
 
-        for (
-            optimal_point,
-            optimal_kpis,
-            scaled_weights,
-        ) in optimizer.optimize():
+        for (optimal_point, optimal_kpis) in optimizer.optimize():
             # When there is new data, this operation informs the system that
             # new data has been received. It must be a dictionary as given.
             readable_points = [
@@ -44,21 +41,13 @@ class NevergradMCO(BaseMCO):
             self.notify_new_point(
                 [DataValue(value=v) for v in readable_points],
                 [DataValue(value=v) for v in optimal_kpis],
-                scaled_weights,
             )
 
 
 def get_labels(parameters):
-    """ Generates numerical labels for each categorical MCOParameter"""
-
-    label_dict = {}
-    label = 1
-
-    for parameter in parameters:
-        if hasattr(parameter, "categories"):
-            for name in parameter.categories:
-                if name not in label_dict:
-                    label_dict[name] = label
-                    label += 1
-
-    return label_dict
+    label_set = set(
+        parameter
+        for parameter in parameters
+        if hasattr(parameter, "categories")
+    )
+    return {index: value for index, value in enumerate(label_set, start=1)}
