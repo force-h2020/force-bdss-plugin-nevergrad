@@ -8,13 +8,11 @@ PYTHON_VERSIONS = ["3.6"]
 
 _nevergrad_stable_commit = "5026eea6c44b83b114bcdb55f6254104d793e927"
 
-ADDITIONAL_CORE_DEPS = [
-
-]
+ADDITIONAL_CORE_DEPS = []
 
 ADDITIONAL_PIP_DEPS = [
- "git+https://github.com/facebookresearch/nevergrad.git@" +
- _nevergrad_stable_commit
+    "git+https://github.com/facebookresearch/nevergrad.git@"
+    + _nevergrad_stable_commit
 ]
 
 
@@ -24,11 +22,12 @@ def cli():
 
 
 python_version_option = click.option(
-    '--python-version',
+    "--python-version",
     default=DEFAULT_PYTHON_VERSION,
     type=click.Choice(PYTHON_VERSIONS),
     show_default=True,
-    help="Python version for the environment")
+    help="Python version for the environment",
+)
 
 
 @cli.command(name="install", help="Install the plugin and its dependencies")
@@ -36,9 +35,9 @@ python_version_option = click.option(
 def install(python_version):
     env_name = get_env_name(python_version)
 
-    returncode = subprocess.call([
-        "edm", "install", "-e", env_name,
-        "--yes"] + ADDITIONAL_CORE_DEPS)
+    returncode = subprocess.call(
+        ["edm", "install", "-e", env_name, "--yes"] + ADDITIONAL_CORE_DEPS
+    )
     if returncode:
         raise click.ClickException("Error while installing EDM dependencies.")
 
@@ -46,7 +45,8 @@ def install(python_version):
         returncode = edm_run(env_name, ["pip", "install", dep])
         if returncode:
             raise click.ClickException(
-                "Error while installing {!r} through pip.".format(dep))
+                "Error while installing {!r} through pip.".format(dep)
+            )
 
     returncode = edm_run(env_name, ["pip", "install", "-e", "."])
     if returncode:
@@ -59,7 +59,8 @@ def test(python_version):
     env_name = get_env_name(python_version)
 
     returncode = edm_run(
-        env_name, ["python", "-m", "unittest", "discover", "-v"])
+        env_name, ["python", "-m", "unittest", "discover", "-v"]
+    )
 
     if returncode:
         raise click.ClickException("There were test failures.")
@@ -73,7 +74,8 @@ def flake8(python_version):
     returncode = edm_run(env_name, ["flake8", "."])
     if returncode:
         raise click.ClickException(
-            "Flake8 exited with exit status {}".format(returncode))
+            "Flake8 exited with exit status {}".format(returncode)
+        )
 
 
 @cli.command(help="Runs the coverage")
@@ -82,7 +84,8 @@ def coverage(python_version):
     env_name = get_env_name(python_version)
 
     returncode = edm_run(
-        env_name, ["coverage", "run", "-m", "unittest", "discover"])
+        env_name, ["coverage", "run", "-m", "unittest", "discover"]
+    )
     if returncode:
         raise click.ClickException("There were test failures.")
 
@@ -92,15 +95,17 @@ def coverage(python_version):
 
     if returncode:
         raise click.ClickException(
-            "There were errors while installing and running codecov.")
+            "There were errors while installing and running codecov."
+        )
 
 
 @cli.command(help="Builds the documentation")
 @python_version_option
-@click.option('--apidoc-only', is_flag=True, help="Only generate API doc.")
+@click.option("--apidoc-only", is_flag=True, help="Only generate API doc.")
 @click.option(
-    '--html-only', is_flag=True,
-    help="Only generate HTML documentation (requires API doc in source/api)."
+    "--html-only",
+    is_flag=True,
+    help="Only generate HTML documentation (requires API doc in source/api).",
 )
 def docs(python_version, apidoc_only, html_only):
     if apidoc_only and html_only:
@@ -115,17 +120,20 @@ def docs(python_version, apidoc_only, html_only):
         if os.path.exists(doc_api):
             shutil.rmtree(doc_api)
         returncode = edm_run(
-            env_name, ['sphinx-apidoc', '-o', doc_api, package, '*tests*'])
+            env_name, ["sphinx-apidoc", "-o", doc_api, package, "*tests*"]
+        )
         if returncode:
             raise click.ClickException(
-                "There were errors while building the API docs.")
+                "There were errors while building the API docs."
+            )
 
     if not apidoc_only:
         click.echo("Generating HTML")
         returncode = edm_run(env_name, ["make", "html"], cwd="doc")
         if returncode:
             raise click.ClickException(
-                "There were errors while building HTML documentation.")
+                "There were errors while building HTML documentation."
+            )
 
 
 def get_env_name(python_version):
@@ -133,11 +141,11 @@ def get_env_name(python_version):
 
 
 def remove_dot(python_version):
-    return "".join(python_version.split('.'))
+    return "".join(python_version.split("."))
 
 
 def edm_run(env_name, cmd, cwd=None):
-    return subprocess.call(["edm", "run", "-e", env_name, "--"]+cmd, cwd=cwd)
+    return subprocess.call(["edm", "run", "-e", env_name, "--"] + cmd, cwd=cwd)
 
 
 if __name__ == "__main__":
