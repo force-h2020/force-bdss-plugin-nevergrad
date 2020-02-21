@@ -28,26 +28,12 @@ class NevergradMCO(BaseMCO):
             verbose_run=model.verbose_run,
         )
 
-        label_dict = get_labels(model.parameters)
-
         log.info("Doing MCO run")
 
         for (optimal_point, optimal_kpis) in optimizer.optimize():
             # When there is new data, this operation informs the system that
             # new data has been received. It must be a dictionary as given.
-            readable_points = [
-                label_dict[v] if v in label_dict else v for v in optimal_point
-            ]
             model.notify_progress_event(
-                [DataValue(value=v) for v in readable_points],
+                [DataValue(value=v) for v in optimal_point],
                 [DataValue(value=v) for v in optimal_kpis],
             )
-
-
-def get_labels(parameters):
-    labels = {
-        parameter: None
-        for parameter in parameters
-        if hasattr(parameter, "categories")
-    }
-    return {index: value for index, value in enumerate(labels.keys(), start=1)}
