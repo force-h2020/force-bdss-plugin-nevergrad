@@ -88,3 +88,74 @@ generated when all the data entries are available.
 Setting the ``verbose_run`` to ``False`` will result in no data entries exposed to the user during the optimization.
 When the optimization budget is finally spent by the optimizer, the ``NevergradOptimizerEngine`` will identify the Pareto front,
 and notify the user with the Pareto-optimal data entries.
+
+
+*******************************
+``nevergrad`` basics and how-to
+*******************************
+
+Please refer to the `official documentation <https://github.com/facebookresearch/nevergrad/tree/master/docs>`_ first:
+the API, design principles, and guidelines can (and almost certainly will) change.
+
+6 things to know about ``nevergrad``
+####################################
+
+* ``nevergrad`` is a great tool for gradient-free optimization of generic problems, with the possibility to optimize numerical
+  and categorical values. Users have access to benchmarking tools and many algorithms out of the box.
+* ``nevergrad`` is great for single objective optimization with “easy” constraints: when the parameter space is assumed to
+  violate the constraints on a small part of the search space. This means: no equality constraints, no severe inequality
+  constraints. Of course, users can implement the constraints handling ourselves.
+* ``nevergrad`` can be used for multiobjective optimization: either by explicit conversion of the MCO problem into a single
+  objective problem (for example, using a weighted approach), or using the neveregrad hypervolume approach. The later
+  one provides automated Pareto-front calculation.
+* It is relatively easy to have custom search spaces: from standard bounded parameters and categorical values,
+  to variables with logarithmic distribution (useful for ML applications), and user-defined distributions.
+* Ask-and-tell interface allows us to
+    * Yield the optimization results at runtime when a new input point is explored, and process them if we want to, and
+    * Instead of using the internal ``nevergrad``’s recommendation system for search space exploration, we can
+      choose what combinations of parameters to explore, and Nevergrad will infer from that.
+* ``nevergrad`` can perform parallel optimization usign ``multiprocessing`` and GPUs.
+
+
+Ask, tell, and provide recommendation
+#####################################
+
+``nevergrad`` implements the ``ask and tell`` interface.
+The three key methods for this interface are:
+
+* ``ask``: suggest a candidate on which to evaluate the function to optimize.
+* ``tell``: for updated the optimizer with the value of the function for a candidate.
+* ``provide_recommendation``: returns the candidate the algorithms considers the best.
+
+A toy example shows the usage of these methods:
+
+.. code-block:: python
+
+    import nevergrad as ng
+
+    def square(x, y=12):
+        """
+        Convex objective function
+        """
+        return sum((x - 1.5) ** 2) + abs(y)
+
+    params = ng.p.Instrumentation(ng.p.Array(shape=(2,)), y=ng.p.Scalar())
+    optimizer = ng.optimizers.OnePlusOne(parametrization=params, budget=100)
+
+    for _ in range(optimizer.budget):
+        x = optimizer.ask()
+        value = square(*x.args, **x.kwargs)
+        optimizer.tell(x, value)
+
+
+    recommendation = optimizer.provide_recommendation()
+    print(recommendation.value)
+
+Advanced users can implement their own ``NevergradOptimizerEngine.optimize()`` method, that asks the
+optimization algorithm for a point to evaluate via ``ask``, submits multiple objective evaluation calls to separate
+processes, and then notifies the via optimization algorithm about the results via ``tell``.
+The optimization algorithm can then provide a recommendation on what is considered to be an "optimal" input for this
+objective.
+
+Since the ``NevergradOptimizerEngine`` is separated from the ``MCO.run()``, the ``MCO`` implementation is independent of
+how the gradient-free algorithm is performing the optimization under the hood.
