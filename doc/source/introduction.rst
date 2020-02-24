@@ -49,7 +49,7 @@ Nevergrad optimizer engine
 
 The ``NevergradOptimizerEngine`` inherits from the ``BaseOptimizerEngine``, and requires a list of MCO parameters and KPIs
 to be specified upon the engine instantiation.
-The ``NevergradOptimizerEngine`` parses the standard ``force-bdss`` MCO parameters into its own internal types.
+The ``NevergradOptimizerEngine`` parses the ``BaseMCOParameter``s into its own internal types.
 The ``NevergradOptimizerEngine`` can handle
 
 * continuous numerical parameters (these implement ``lower_bound`` and ``upper_bound`` attributes),
@@ -58,8 +58,7 @@ The ``NevergradOptimizerEngine`` can handle
 * constant-valued paramaters (these implement ``value`` attribute).
 
 The KPIs are implicitly assumed to be minimized over the course of optimization.
-User should provide the upper bounds for the KPIs, which is required by the multiobjective optimization algorithm,
-implemented in ``nevergrad``.
+User should provide the upper bounds for the KPIs, which is required by the ``nevergrad`` multiobjective optimization algorithm.
 Due to the backwards compatibility issues, the KPIs' upper bounds must be specified by the ``scale_factor`` field.
 (This will likely be fixed in the next release, see `this issue <https://github.com/force-h2020/force-bdss/issues/293>`_).
 
@@ -67,8 +66,8 @@ The choice of possible optimization algorithms is provided by the ``nevergrad`` 
 If users would like to implement their own optimization algorithm,
 `this reference <https://github.com/facebookresearch/nevergrad/blob/master/docs/contributing.rst#adding-an-algorithm>`_
 explains general guidelines how to do that.
-Please be aware that the optimization convergence, efficiency, and computation time strongly depends on the optimization strategy,
-and it might require some effort to find an algorithm suitable for a particular problem.
+Please be aware that the optimization convergence, efficiency, and computational time strongly depends on the optimization strategy,
+and it might require some effort to find the algorithm suitable for a particular problem.
 
 
 Nevergrad MCO
@@ -87,7 +86,7 @@ This also means that the Pareto front is not generated during the optimization r
 generated when all the data entries are available.
 
 Setting the ``verbose_run`` to ``False`` will result in no data entries exposed to the user during the optimization.
-When the optimization budget is finally spent by the optimizer, the ``NevergradOptimizerEngine`` will identify the Pareto front,
+When the optimization is finished, the ``NevergradOptimizerEngine`` will identify the Pareto front,
 and notify the user with the Pareto-optimal data entries.
 
 
