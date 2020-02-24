@@ -39,7 +39,7 @@ Users can perform the gradient-free optimization of their workflows by specifyin
 
 
 Users can import the ``NevergradOptimizerEngine`` and implement their own family of ``MCOFactory, MCOModel, MCO`` classes
-that use the ``nevergrad`` as the optimizer engine.
+that uses the ``nevergrad`` as the optimizer engine.
 
 
 Nevergrad optimizer engine
@@ -61,3 +61,30 @@ User should provide the upper bounds for the KPIs, which is required by the mult
 implemented in ``nevergrad``.
 Due to the backwards compatibility issues, the KPIs' upper bounds must be specified by the ``scale_factor`` field.
 (This will likely be fixed in the next release, see `this issue <https://github.com/force-h2020/force-bdss/issues/293>`_).
+
+The choice of possible optimization algorithms is provided by the ``nevergrad`` library itself.
+If users would like to implement their own optimization algorithm,
+`this reference <https://github.com/facebookresearch/nevergrad/blob/master/docs/contributing.rst#adding-an-algorithm>`_
+explains general guidelines how to do that.
+Please be aware that the optimization convergence, efficiency, and computation time strongly depends on the optimization strategy,
+and it might require some effort to find an algorithm suitable for a particular problem.
+
+
+Nevergrad MCO
+################################
+
+The ``NevergradMCO`` and ``NevergradMCOModel`` implement the minimal working example of an MCO.
+Users are strongly encouraged to develop or extend the existing methods.
+
+The ``budget`` attribute defines the allowed number of objective function calls.
+
+It is possible to choose between a ``verbose_run = True`` and ``verbose_run = False`` options for the MCO model.
+
+The verbose run will notify the Workflow Manager every time a point is evaluated in the parameter space, and the user will
+observe the number of data entries equal to the optimization budget.
+This also means that the Pareto front is not generated during the optimization run, since the Pareto front can only be
+generated when all the data entries are available.
+
+Setting the ``verbose_run`` to ``False`` will result in no data entries exposed to the user during the optimization.
+When the optimization budget is finally spent by the optimizer, the ``NevergradOptimizerEngine`` will identify the Pareto front,
+and notify the user with the Pareto-optimal data entries.
