@@ -43,4 +43,21 @@ that use the ``nevergrad`` as the optimizer engine.
 
 
 Nevergrad optimizer engine
-########
+################################
+
+
+The ``NevergradOptimizerEngine`` inherits from the ``BaseOptimizerEngine``, and requires a list of MCO parameters and KPIs
+to be specified upon the engine instantiation.
+The ``NevergradOptimizerEngine`` parses the standard ``force-bdss`` MCO parameters into its own internal types.
+The ``NevergradOptimizerEngine`` can handle
+
+* continuous numerical parameters (these implement ``lower_bound`` and ``upper_bound`` attributes),
+* ordered discrete parameters (these implement ``levels`` attribute),
+* unordered discrete parameters (these implement ``categories`` attribute), and
+* constant-valued paramaters (these implement ``value`` attribute).
+
+The KPIs are implicitly assumed to be minimized over the course of optimization.
+User should provide the upper bounds for the KPIs, which is required by the multiobjective optimization algorithm,
+implemented in ``nevergrad``.
+Due to the backwards compatibility issues, the KPIs' upper bounds must be specified by the ``scale_factor`` field.
+(This will likely be fixed in the next release, see `this issue <https://github.com/force-h2020/force-bdss/issues/293>`_).
