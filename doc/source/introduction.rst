@@ -26,17 +26,18 @@ Users can perform the gradient-free optimization of their workflows by specifyin
 
 .. code-block:: json
 
-    "workflow": {
-        "mco_model": {
-            "id": "force.bdss.nevergrad.plugin.wrapper.v0.factory.nevergrad_mco",
-            "model_data": {
-                "algorithms": "OnePlusOne",
-                "budget": 200,
-                "verbose_run": true
+    {
+        "workflow": {
+            "mco_model": {
+                "id": "force.bdss.nevergrad.plugin.wrapper.v0.factory.nevergrad_mco",
+                "model_data": {
+                    "algorithms": "OnePlusOne",
+                    "budget": 200,
+                    "verbose_run": true
+                }
             }
         }
     }
-
 
 Users can import the ``NevergradOptimizerEngine`` and implement their own family of ``MCOFactory, MCOModel, MCO`` classes
 that uses the ``nevergrad`` as the optimizer engine.
