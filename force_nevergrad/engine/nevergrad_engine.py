@@ -54,7 +54,12 @@ class NevergradOptimizerEngine(BaseOptimizerEngine):
             parameter, "upper_bound"
         ):
             mid_point = parameter.initial_value
-            return ng.p.Scalar(mid_point).set_bounds(
+            try:
+                _ = parameter.dimension
+                parameter_type = ng.p.Array
+            except AttributeError:
+                parameter_type = ng.p.Scalar
+            return parameter_type(init=mid_point).set_bounds(
                 parameter.lower_bound, parameter.upper_bound, method="arctan"
             )
         elif hasattr(parameter, "value"):
