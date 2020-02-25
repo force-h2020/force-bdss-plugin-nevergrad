@@ -14,6 +14,8 @@ from force_bdss.api import (
     RangedMCOParameter,
     CategoricalMCOParameterFactory,
     CategoricalMCOParameter,
+    RangedVectorMCOParameter,
+    RangedVectorMCOParameterFactory
 )
 
 from force_nevergrad.nevergrad_plugin import NevergradPlugin
@@ -45,6 +47,11 @@ class TestMCO(TestCase, UnittestTools):
                 upper_bound=1.5,
                 n_samples=3,
             ),
+            RangedVectorMCOParameter(
+                mock.Mock(spec=RangedVectorMCOParameterFactory),
+                upper_bound=[1.5],
+                n_samples=3,
+            )
         ]
         self.model.parameters = self.parameters
 
@@ -58,7 +65,7 @@ class TestMCO(TestCase, UnittestTools):
         self.assertEqual("nevergrad_mco", self.factory.get_identifier())
         self.assertIs(self.factory.get_model_class(), NevergradMCOModel)
         self.assertIs(self.factory.get_optimizer_class(), NevergradMCO)
-        self.assertEqual(4, len(self.factory.get_parameter_factory_classes()))
+        self.assertEqual(5, len(self.factory.get_parameter_factory_classes()))
 
     def test_simple_run(self):
         mco = self.factory.create_optimizer()
