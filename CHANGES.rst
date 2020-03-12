@@ -4,7 +4,7 @@ FORCE Nevergrad Plugin Changelog
 Release 0.1.0
 -------------
 
-Released: 12/03/2020
+Released: 12 Mar 2020
 
 Release notes
 ~~~~~~~~~~~~~
