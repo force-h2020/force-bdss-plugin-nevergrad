@@ -13,6 +13,7 @@ Version 0.1.0 is the inital release of the ``force-bdss-plugin-nevergrad`` packa
 
 The following people contributed code changes for this release:
 
+* Corran Webster
 * Frank Longford
 * Petr Kungurtsev
 
