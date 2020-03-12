@@ -9,6 +9,7 @@ from force_bdss.api import (
     RangedMCOParameterFactory,
     ListedMCOParameterFactory,
     CategoricalMCOParameterFactory,
+    RangedVectorMCOParameterFactory,
 )
 from force_bdss.tests.dummy_classes.mco import DummyMCOFactory
 from force_bdss.tests.dummy_classes.optimizer_engine import (
@@ -108,6 +109,29 @@ class TestNevergradOptimizerEngine(TestCase):
             ["2.0", "1.0", "0.0"], list(categorical_variable.choices.value)
         )
 
+        lower_bound = [0.0 for _ in self.parameters]
+        upper_bound = [1.0 for _ in self.parameters]
+        vector_variable = RangedVectorMCOParameterFactory(
+            self.factory
+        ).create_model(
+            {
+                "lower_bound": lower_bound,
+                "upper_bound": upper_bound,
+            }
+        )
+        vector_variable = self.optimizer._create_instrumentation_variable(
+            vector_variable
+        )
+        self.assertIsInstance(vector_variable, ng.p.Array)
+        self.assertFalse(isinstance(vector_variable, ng.p.Scalar))
+        self.assertListEqual(
+            upper_bound, list(vector_variable.bound_transform.a_max[0])
+        )
+        self.assertListEqual(
+            lower_bound, list(vector_variable.bound_transform.a_min[0])
+        )
+        self.assertIsInstance(vector_variable.bound_transform, ArctanBound)
+
         with self.assertRaises(NevergradTypeError):
             self.optimizer._create_instrumentation_variable(1)
 
@@ -144,6 +168,25 @@ class TestNevergradOptimizerEngine(TestCase):
             self.assertEqual(kpi.scale_factor, kpi_bound)
 
     def test_optimize(self):
+        self.mocked_optimizer.verbose_run = True
+        optimized_data = list(self.mocked_optimizer.optimize())
+        self.assertEqual(self.mocked_optimizer.budget, len(optimized_data))
+
+        self.mocked_optimizer.verbose_run = False
+        for optimized_data in self.mocked_optimizer.optimize():
+            self.assertEqual(4, len(optimized_data[0]))
+            self.assertEqual(2, len(optimized_data[1]))
+
+    def test_optimize_vector(self):
+        vector_parameter = RangedVectorMCOParameterFactory(
+            self.factory
+        ).create_model(
+            {
+                "lower_bound": [0.0 for _ in self.parameters],
+                "upper_bound": [1.0 for _ in self.parameters],
+            }
+        )
+        self.optimizer.parameters = [vector_parameter]
         self.mocked_optimizer.verbose_run = True
         optimized_data = list(self.mocked_optimizer.optimize())
         self.assertEqual(self.mocked_optimizer.budget, len(optimized_data))

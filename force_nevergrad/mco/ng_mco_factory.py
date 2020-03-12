@@ -3,6 +3,7 @@ from force_bdss.api import (
     FixedMCOParameterFactory,
     ListedMCOParameterFactory,
     RangedMCOParameterFactory,
+    RangedVectorMCOParameterFactory,
     CategoricalMCOParameterFactory,
     BaseMCOCommunicator
 )
@@ -43,4 +44,5 @@ class NevergradMCOFactory(BaseMCOFactory):
             ListedMCOParameterFactory,
             RangedMCOParameterFactory,
             CategoricalMCOParameterFactory,
+            RangedVectorMCOParameterFactory
         ]
