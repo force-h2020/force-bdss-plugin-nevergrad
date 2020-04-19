@@ -4,7 +4,7 @@ from .gauss2d_data_source_model import Gauss2dDataSourceModel
 from .gauss2d_data_source import Gauss2dDataSource
 
 
-class ArrheniusParametersFactory(BaseDataSourceFactory):
+class Gauss2dFactory(BaseDataSourceFactory):
     def get_identifier(self):
         return "gauss_2d"
 

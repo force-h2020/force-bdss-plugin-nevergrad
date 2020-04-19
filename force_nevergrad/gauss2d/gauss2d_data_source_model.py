@@ -4,7 +4,7 @@ from traitsui.api import View, Item
 from force_bdss.api import BaseDataSourceModel
 
 
-class Gauss2dModel(BaseDataSourceModel):
+class Gauss2dDataSourceModel(BaseDataSourceModel):
 
     g1_peak = Float(-2.0)
     g1_cent_x = Float(-1.0)
