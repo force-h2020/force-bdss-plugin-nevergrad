@@ -8,12 +8,12 @@ class Gauss2dDataSource(BaseDataSource):
         x = parameters[0]
         y = parameters[1]
 
-        a1 = ((x - model.g1_cent_x)**2)/(2.0*model.g1_sigm_x)**2
-        a1 += ((y - model.g1_cent_y) ** 2) / (2.0 * model.g1_sigm_y) ** 2
+        a1 = ((x - model.g1_cent_x)**2)/(2.0*model.g1_sigm_x**2)
+        a1 += ((y - model.g1_cent_y) ** 2) / (2.0 * model.g1_sigm_y**2)
         a1 = model.g1_peak * math.exp(-a1)
 
-        a2 = ((x - model.g2_cent_x) ** 2) / (2.0 * model.g2_sigm_x) ** 2
-        a2 += ((y - model.g2_cent_y) ** 2) / (2.0 * model.g2_sigm_y) ** 2
+        a2 = ((x - model.g2_cent_x) ** 2) / (2.0 * model.g2_sigm_x**2)
+        a2 += ((y - model.g2_cent_y) ** 2) / (2.0 * model.g2_sigm_y**2)
         a2 = model.g1_peak * math.exp(-a2)
 
         return [
