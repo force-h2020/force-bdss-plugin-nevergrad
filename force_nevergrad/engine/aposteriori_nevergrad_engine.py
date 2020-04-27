@@ -13,14 +13,16 @@ from force_bdss.mco.optimizers.nevergrad_optimizers import (
 
 class AposterioriNevergradEngine(NevergradMultiOptimizer,
                                  AposterioriOptimizerEngine):
-    """ A posteriori optimization using the nevergrad library.
+    """ A posteriori multi-objective optimization
+    using the nevergrad library.
     """
     pass
 
 
 class AprioriNevergradEngine(NevergradScalarOptimizer,
                              WeightedOptimizerEngine):
-    """ A priori optimization using the nevergrad library.
-        Just here to illustrate the point.
+    """ A priori (weighted) multi-objective optimization
+    using the nevergrad library.
+    Just here to illustrate the point.
     """
     pass
