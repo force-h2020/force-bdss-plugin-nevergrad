@@ -3,9 +3,6 @@ from unittest import TestCase, mock
 from traits.testing.unittest_tools import UnittestTools
 
 from force_bdss.api import (
-    KPISpecification,
-    Workflow,
-    DataValue,
     FixedMCOParameterFactory,
     ListedMCOParameterFactory,
     RangedMCOParameterFactory,
@@ -56,7 +53,6 @@ class TestMCO(TestCase, UnittestTools):
         self.model.parameters = self.parameters
 
     def test_mco_model(self):
-        self.assertEqual("TwoPointsDE", self.model.algorithms)
         self.assertEqual(100, self.model.budget)
         self.assertEqual(True, self.model.verbose_run)
 
@@ -66,20 +62,3 @@ class TestMCO(TestCase, UnittestTools):
         self.assertIs(self.factory.get_model_class(), NevergradMCOModel)
         self.assertIs(self.factory.get_optimizer_class(), NevergradMCO)
         self.assertEqual(5, len(self.factory.get_parameter_factory_classes()))
-
-    def test_simple_run(self):
-        mco = self.factory.create_optimizer()
-        model = self.factory.create_model()
-        model.budget = 61
-        model.parameters = self.parameters
-        model.kpis = [KPISpecification(), KPISpecification()]
-
-        workflow = Workflow()
-        workflow.mco_model = model
-        kpis = [DataValue(value=1), DataValue(value=2)]
-        with self.assertTraitChanges(model, "event", count=61):
-            with mock.patch(
-                "force_bdss.api.Workflow.execute", return_value=kpis
-            ) as mock_exec:
-                mco.run(workflow)
-                self.assertEqual(61, mock_exec.call_count)

@@ -9,7 +9,7 @@ class Gauss2dFactory(BaseDataSourceFactory):
         return "gauss_2d"
 
     def get_name(self):
-        return "2D gaussian"
+        return "Gauss 2d"
 
     def get_model_class(self):
         return Gauss2dDataSourceModel

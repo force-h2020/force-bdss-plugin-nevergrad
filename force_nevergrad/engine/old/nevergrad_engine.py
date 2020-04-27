@@ -1,5 +1,6 @@
 import logging
 import numpy as np
+
 import nevergrad as ng
 from nevergrad.functions import MultiobjectiveFunction
 from nevergrad.parametrization import core as ng_core
@@ -135,6 +136,7 @@ class NevergradOptimizerEngine(BaseOptimizerEngine):
         ng_optimizer = ng.optimizers.registry[self.algorithms](
             parametrization=instrumentation, budget=self.budget
         )
+
         for _ in range(ng_optimizer.budget):
             x = ng_optimizer.ask()
             value = f.multiobjective_function(x.args)
@@ -142,7 +144,6 @@ class NevergradOptimizerEngine(BaseOptimizerEngine):
                 self._minimization_score(value), *x.args, **x.kwargs
             )
             ng_optimizer.tell(x, volume)
-
             if self.verbose_run:
                 yield x.args, value
 
