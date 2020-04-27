@@ -2,6 +2,9 @@
 from force_bdss.mco.optimizer_engines.aposteriori_optimizer_engine import (
     AposterioriOptimizerEngine
 )
+from force_bdss.mco.optimizer_engines.weighted_optimizer_engine import (
+    WeightedOptimizerEngine
+)
 from force_bdss.mco.optimizers.nevergrad_optimizers import (
     NevergradMultiOptimizer,
     NevergradScalarOptimizer
@@ -10,9 +13,14 @@ from force_bdss.mco.optimizers.nevergrad_optimizers import (
 
 class AposterioriNevergradEngine(NevergradMultiOptimizer,
                                  AposterioriOptimizerEngine):
+    """ A posteriori optimization using the nevergrad library.
+    """
     pass
 
 
 class AprioriNevergradEngine(NevergradScalarOptimizer,
-                             AposterioriOptimizerEngine):
+                             WeightedOptimizerEngine):
+    """ A priori optimization using the nevergrad library.
+        Just here to illustrate the point.
+    """
     pass
