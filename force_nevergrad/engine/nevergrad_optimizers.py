@@ -1,7 +1,9 @@
+import numpy as np
 from traits.api import (
     Enum,
     provides,
-    HasStrictTraits
+    HasStrictTraits,
+    Property
 )
 from force_bdss.api import PositiveInt
 
@@ -107,8 +109,29 @@ class NevergradMultiOptimizer(HasStrictTraits):
     #: Optimization budget defines the allowed number of objective calls
     budget = PositiveInt(500)
 
+    kpi_bounds = Property(depends_on="kpis.[scale_factor]")
+
     def _algorithms_default(self):
         return "TwoPointsDE"
+
+    def _get_kpi_bounds(self):
+        """ Assemble optimization bounds on KPIs, provided by
+        the `scale_factor` attributes.
+        Note: Ideally, an `upper_bound` kpi attribute should be
+        responsible for the bounds.
+        Parameters
+        ----------
+        kpis: List(KPISpecification)
+            kpi objects containing upper numerical bounds
+        Returns
+        ----------
+        upper_bounds: np.array
+            kpis upper bounds
+        """
+        upper_bounds = np.zeros(len(self.kpis))
+        for i, kpi in enumerate(self.kpis):
+            upper_bounds[i] = kpi.scale_factor
+        return upper_bounds
 
     def optimize_function(self, func, x0, bounds=()):
         """ Minimize the passed function.
