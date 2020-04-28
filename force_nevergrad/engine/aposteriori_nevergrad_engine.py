@@ -5,7 +5,7 @@ from force_bdss.mco.optimizer_engines.aposteriori_optimizer_engine import (
 from force_bdss.mco.optimizer_engines.weighted_optimizer_engine import (
     WeightedOptimizerEngine
 )
-from force_bdss.mco.optimizers.nevergrad_optimizers import (
+from .nevergrad_optimizers import (
     NevergradMultiOptimizer,
     NevergradScalarOptimizer
 )
