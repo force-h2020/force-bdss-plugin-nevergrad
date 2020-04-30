@@ -1,11 +1,15 @@
 import numpy as np
+from functools import partial
 from traits.api import (
     Enum,
     provides,
     HasStrictTraits,
-    Property
+    Property,
+    List
 )
 from force_bdss.api import PositiveInt
+
+from force_bdss.core.kpi_specification import KPISpecification
 
 from force_bdss.mco.optimizers.i_optimizer import IOptimizer
 
@@ -78,12 +82,25 @@ class NevergradScalarOptimizer(HasStrictTraits):
     def _algorithms_default(self):
         return "TwoPointsDE"
 
-    def optimize_function(self, func, x0, bounds=()):
-        """ Minimize the passed function.
+    def optimize_function(self, func, params):
+        """ Minimize the passed scalar function.
+
+                Parameters
+                ----------
+                func: Callable
+                    The MCO function to optimize
+                    Takes a list of MCO parameter values.
+                params: list of MCOParameter
+                    The MCO parameter objects corresponding to the parameter values.
+
+                Yields
+                ------
+                list of float or list:
+                    The list of optimal parameter values.
         """
         # Create parameterization.
         instrumentation = ng.p.Instrumentation(
-            *[create_instrumentation_variable(x) for x in x0]
+            *[create_instrumentation_variable(p) for p in params]
         )
 
         # Create optimizer.
@@ -95,7 +112,7 @@ class NevergradScalarOptimizer(HasStrictTraits):
         optimization_result = optimizer.minimize(func)
         optimal_point = optimization_result.value
 
-        return optimal_point
+        yield optimal_point
 
 
 @provides(IOptimizer)
@@ -108,6 +125,9 @@ class NevergradMultiOptimizer(HasStrictTraits):
 
     #: Optimization budget defines the allowed number of objective calls
     budget = PositiveInt(500)
+
+    #: A list of the output KPI parameters representing the objective(s)
+    kpis = List(KPISpecification, visible=False, transient=True)
 
     kpi_bounds = Property(depends_on="kpis.[scale_factor]")
 
@@ -133,30 +153,55 @@ class NevergradMultiOptimizer(HasStrictTraits):
             upper_bounds[i] = kpi.scale_factor
         return upper_bounds
 
-    def optimize_function(self, func, x0, bounds=()):
-        """ Minimize the passed function.
+    def optimize_function(self, func, params):
+        """ Minimize the passed multi-objective function.
+
+                Parameters
+                ----------
+                func: Callable
+                    The MCO function to optimize
+                    Takes a list of MCO parameter values.
+                params: list of MCOParameter
+                    The MCO parameter objects corresponding to the parameter values.
+
+                Yields
+                ------
+                list of float or list:
+                    The list of parameter optimal values.
         """
+        # create partial of func, where parameter args are unpacked
+        ufunc = partial(self.unpacked_func, func=func)
+
         # create multi-objective function object
         mfunc = MultiobjectiveFunction(
-            multiobjective_function=func,
+            multiobjective_function=ufunc, upper_bounds=self.kpi_bounds
         )
 
         # Create parameterization.
-        # instrumentation = ng.p.Instrumentation(
-        #    *[create_instrumentation_variable(x) for x in x0]
-        # )
+        instrumentation = ng.p.Instrumentation(
+           *[create_instrumentation_variable(x) for x in params]
+        )
+        #print(str(instrumentation))
 
         # Create optimizer.
         # NOTE: parametrization = instrumentation, DOES NOT WORK
         # for multi-objective function args should be unpacked?
         optimizer = ng.optimizers.registry[self.algorithms](
-            parametrization=len(x0), budget=self.budget
+            parametrization=instrumentation, budget=self.budget
         )
 
         # Optimize.
         optimizer.minimize(mfunc)
 
-        # List of nd.array. Each entry is a member of the Pareto set.
-        optimal_points = [x[0][0] for x in mfunc.pareto_front()]
+        # yield a member of the Pareto set.
+        for x in mfunc.pareto_front():
+            print(type(x[0]))
+            yield x[0][0]
 
-        return optimal_points
+    def unpacked_func(self, *vargs, func=None):
+
+        kp = func(list(vargs))
+        #print('output = ', type(kp), len(kp))
+        return kp
+
+
