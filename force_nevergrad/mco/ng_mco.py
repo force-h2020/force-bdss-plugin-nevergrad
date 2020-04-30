@@ -3,8 +3,11 @@ import sys
 
 from force_bdss.api import BaseMCO, DataValue
 
-from force_nevergrad.engine.aposteriori_nevergrad_engine import (
-    AposterioriNevergradEngine
+from force_bdss.mco.optimizer_engines.aposteriori_optimizer_engine import (
+    AposterioriOptimizerEngine
+)
+from force_nevergrad.engine.nevergrad_optimizers import (
+    NevergradMultiOptimizer
 )
 
 log = logging.getLogger(__name__)
@@ -21,13 +24,17 @@ class NevergradMCO(BaseMCO):
     def run(self, evaluator):
         model = evaluator.mco_model
 
-        optimizer = AposterioriNevergradEngine(
+        optim = NevergradMultiOptimizer(
+            algorithms=model.algorithms,
+            kpis=model.kpis,
+            budget=model.budget)
+
+        optimizer = AposterioriOptimizerEngine(
             kpis=model.kpis,
             parameters=model.parameters,
-            budget=model.budget,
-            algorithms=model.algorithms,
             single_point_evaluator=evaluator,
             verbose_run=model.verbose_run,
+            optimizer=optim
         )
 
         formatter = logging.Formatter(

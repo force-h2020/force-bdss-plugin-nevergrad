@@ -3,8 +3,8 @@ from traitsui.api import View, Item
 
 from force_bdss.api import BaseMCOModel, PositiveInt
 
-from force_nevergrad.engine.aposteriori_nevergrad_engine import (
-    AposterioriNevergradEngine
+from force_nevergrad.engine.nevergrad_optimizers import (
+    NevergradMultiOptimizer
 )
 
 
@@ -14,7 +14,7 @@ class NevergradMCOModel(BaseMCOModel):
 
     #: Algorithms available to work with
     algorithms = Enum(
-        *AposterioriNevergradEngine.class_traits()["algorithms"].handler.values
+        *NevergradMultiOptimizer.class_traits()["algorithms"].handler.values
     )
 
     #: Defines the allowed number of objective calls

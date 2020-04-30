@@ -22,13 +22,16 @@ from force_nevergrad.engine.nevergrad_optimizers import (
     create_instrumentation_variable
 )
 
-from force_nevergrad.engine.aposteriori_nevergrad_engine import (
-    AposterioriNevergradEngine
+from force_bdss.mco.optimizer_engines.aposteriori_optimizer_engine import (
+    AposterioriOptimizerEngine
+)
+from force_nevergrad.engine.nevergrad_optimizers import (
+    NevergradMultiOptimizer
 )
 
 
 class DummyOptimizerEngine(
-    MixinDummyOptimizerEngine, AposterioriNevergradEngine
+    MixinDummyOptimizerEngine, AposterioriOptimizerEngine
 ):
     pass
 
@@ -48,24 +51,25 @@ class TestNevergradOptimizerEngine(TestCase):
             for _ in self.parameters
         ]
 
-        self.optimizer = AposterioriNevergradEngine(
-            parameters=self.parameters, kpis=self.kpis
+        optim = NevergradMultiOptimizer(
+            kpis=self.kpis,
         )
-        self.mocked_optimizer = DummyOptimizerEngine(
-            parameters=self.parameters, kpis=self.kpis
+
+        self.mocked_engine = DummyOptimizerEngine(
+            parameters=self.parameters, kpis=self.kpis,
+            optimizer=optim
         )
 
     def test_init(self):
-        self.assertIsInstance(self.optimizer, AposterioriNevergradEngine)
-        self.assertEqual("TwoPointsDE", self.optimizer.algorithms)
-        self.assertEqual(500, self.optimizer.budget)
+        self.assertEqual("TwoPointsDE", self.engine.optimizer.algorithms)
+        self.assertEqual(500, self.engine.optimizer.budget)
 
     def test_optimize(self):
-        self.mocked_optimizer.verbose_run = True
-        optimized_data = list(self.mocked_optimizer.optimize())
+        self.mocked_engine.verbose_run = True
+        optimized_data = list(self.mocked_engine.optimize())
 
-        self.mocked_optimizer.verbose_run = False
-        for optimized_data in self.mocked_optimizer.optimize():
+        self.mocked_engine.verbose_run = False
+        for optimized_data in self.mocked_engine.optimize():
             self.assertEqual(4, len(optimized_data[0]))
             self.assertEqual(2, len(optimized_data[1]))
 
@@ -78,11 +82,11 @@ class TestNevergradOptimizerEngine(TestCase):
                 "upper_bound": [1.0 for _ in self.parameters],
             }
         )
-        self.optimizer.parameters = [vector_parameter]
-        self.mocked_optimizer.verbose_run = True
-        optimized_data = list(self.mocked_optimizer.optimize())
-        self.mocked_optimizer.verbose_run = False
-        for optimized_data in self.mocked_optimizer.optimize():
+        self.engine.parameters = [vector_parameter]
+        self.mocked_engine.verbose_run = True
+        optimized_data = list(self.mocked_engine.optimize())
+        self.mocked_engine.verbose_run = False
+        for optimized_data in self.mocked_engine.optimize():
             self.assertEqual(4, len(optimized_data[0]))
             self.assertEqual(2, len(optimized_data[1]))
 
