@@ -1,170 +1,89 @@
 from unittest import TestCase, mock
 
-import nevergrad as ng
-from nevergrad.parametrization.transforms import ArctanBound
-from nevergrad.parametrization import core as ng_core
-
 from force_bdss.api import (
     KPISpecification,
-    FixedMCOParameterFactory,
-    RangedMCOParameterFactory,
-    ListedMCOParameterFactory,
-    CategoricalMCOParameterFactory,
-    RangedVectorMCOParameterFactory,
-)
-from force_bdss.tests.dummy_classes.mco import DummyMCOFactory
-from force_bdss.tests.dummy_classes.optimizer_engine import (
-    MixinDummyOptimizerEngine,
 )
 
 from force_nevergrad.engine.nevergrad_optimizers import (
-    NevergradTypeError,
-    create_instrumentation_variable
+    NevergradMultiOptimizer,
+    NevergradScalarOptimizer,
 )
 
-from force_bdss.mco.optimizer_engines.aposteriori_optimizer_engine import (
-    AposterioriOptimizerEngine
-)
-from force_nevergrad.engine.nevergrad_optimizers import (
-    NevergradMultiOptimizer
+from force_nevergrad.tests.probe_classes.optimizer import (
+    TwoMinimaObjective
 )
 
 
-class DummyOptimizerEngine(
-    MixinDummyOptimizerEngine, AposterioriOptimizerEngine
-):
-    pass
-
-
-class TestNevergradOptimizerEngine(TestCase):
+class TestNevergradOptimizer(TestCase):
     def setUp(self):
-        self.plugin = {"id": "pid", "name": "Plugin"}
-        self.factory = DummyMCOFactory(self.plugin)
 
-        self.kpis = [KPISpecification(), KPISpecification()]
-        self.parameters = [1, 1, 1, 1]
+        # some objective functions to test
+        self.functions_to_test = [TwoMinimaObjective()]
 
-        self.parameters = [
-            RangedMCOParameterFactory(self.factory).create_model(
-                {"lower_bound": 0.0, "upper_bound": 1.0}
-            )
-            for _ in self.parameters
-        ]
-
-        optim = NevergradMultiOptimizer(
-            kpis=self.kpis,
-        )
-
-        self.mocked_engine = DummyOptimizerEngine(
-            parameters=self.parameters, kpis=self.kpis,
-            optimizer=optim
-        )
+        # scalar- and multi-objective function optimizers
+        self.scalar_optimizer = NevergradScalarOptimizer()
+        self.multi_optimizer = NevergradMultiOptimizer()
 
     def test_init(self):
-        self.assertEqual("TwoPointsDE", self.engine.optimizer.algorithms)
-        self.assertEqual(500, self.engine.optimizer.budget)
+        self.assertEqual("TwoPointsDE", self.multi_optimizer.algorithms)
+        self.assertEqual(500, self.multi_optimizer.budget)
 
-    def test_optimize(self):
-        self.mocked_engine.verbose_run = True
-        optimized_data = list(self.mocked_engine.optimize())
+    def test_scalar_objective(self):
 
-        self.mocked_engine.verbose_run = False
-        for optimized_data in self.mocked_engine.optimize():
-            self.assertEqual(4, len(optimized_data[0]))
-            self.assertEqual(2, len(optimized_data[1]))
+        # test each objective function in turn...
+        for foo in self.functions_to_test:
 
-    def test_optimize_vector(self):
-        vector_parameter = RangedVectorMCOParameterFactory(
-            self.factory
-        ).create_model(
-            {
-                "lower_bound": [0.0 for _ in self.parameters],
-                "upper_bound": [1.0 for _ in self.parameters],
-            }
-        )
-        self.engine.parameters = [vector_parameter]
-        self.mocked_engine.verbose_run = True
-        optimized_data = list(self.mocked_engine.optimize())
-        self.mocked_engine.verbose_run = False
-        for optimized_data in self.mocked_engine.optimize():
-            self.assertEqual(4, len(optimized_data[0]))
-            self.assertEqual(2, len(optimized_data[1]))
+            # set kpis
+            self.scalar_optimizer.kpis = foo.get_kpis()
 
-    def test__create_instrumentation_variable(self):
-        mock_factory = mock.Mock(
-            spec=self.factory,
-            plugin_id="pid",
-            plugin_name="Plugin",
-            id="mcoid",
-        )
-        fixed_variable = FixedMCOParameterFactory(mock_factory).create_model(
-            data_values={"value": 42}
-        )
-        fixed_variable = create_instrumentation_variable(
-            fixed_variable
-        )
-        self.assertIsInstance(fixed_variable, ng_core.Constant)
-        self.assertEqual(42, fixed_variable.value)
+            # get optimal point
+            optimal = [
+                p for p in self.scalar_optimizer.optimize_function(
+                    foo.objective, foo.get_params()
+                )
+            ]
 
-        ranged_variable = RangedMCOParameterFactory(mock_factory).create_model(
-            data_values={"lower_bound": -1.0, "upper_bound": 3.14}
-        )
-        ranged_variable = create_instrumentation_variable(
-            ranged_variable
-        )
-        self.assertIsInstance(ranged_variable, ng.p.Scalar)
-        self.assertListEqual(
-            [3.14], list(ranged_variable.bound_transform.a_max)
-        )
-        self.assertListEqual(
-            [-1.0], list(ranged_variable.bound_transform.a_min)
-        )
-        self.assertIsInstance(ranged_variable.bound_transform, ArctanBound)
+            # there should only be one point
+            self.assertEqual(len(optimal), 1)
+            optimum = optimal[0]
 
-        listed_variable = ListedMCOParameterFactory(mock_factory).create_model(
-            data_values={"levels": [2.0, 1.0, 0.0]}
-        )
-        listed_variable = create_instrumentation_variable(
-            listed_variable
-        )
-        self.assertIsInstance(listed_variable, ng.p.TransitionChoice)
-        self.assertListEqual(
-            [0.0, 1.0, 2.0], list(listed_variable.choices.value)
-        )
+            # the position of the actual global minimum of the objective
+            # and the number of decimal places we should be within.
+            global_optimum, tolerance = foo.get_global_optimum()
 
-        categorical_variable = CategoricalMCOParameterFactory(
-            mock_factory
-        ).create_model(data_values={"categories": ["2.0", "1.0", "0.0"]})
-        categorical_variable = create_instrumentation_variable(
-            categorical_variable
-        )
-        self.assertIsInstance(categorical_variable, ng.p.Choice)
-        self.assertListEqual(
-            ["2.0", "1.0", "0.0"], list(categorical_variable.choices.value)
-        )
+            # is this the global optimum?
+            self.assertEqual(len(optimum), len(global_optimum))
+            # ...compare parameter values
+            for parameter in zip(optimum, global_optimum):
+                # parameter is a list (RangedVector, Listed, Categorical)
+                if isinstance(parameter[0], list):
+                    self.assertEqual(len(parameter[0]), len(parameter[1]))
+                    for i in range(len(parameter[0])):
+                        self.assertAlmostEqual(parameter[0][i],
+                            parameter[1][i], places=tolerance)
+                # parameter is a scalar
+                else:
+                    self.assertAlmostEqual(parameter[0], parameter[1],
+                                           places=tolerance)
 
-        lower_bound = [0.0 for _ in self.parameters]
-        upper_bound = [1.0 for _ in self.parameters]
-        vector_variable = RangedVectorMCOParameterFactory(
-            self.factory
-        ).create_model(
-            {
-                "lower_bound": lower_bound,
-                "upper_bound": upper_bound,
-            }
-        )
-        vector_variable = create_instrumentation_variable(
-            vector_variable
-        )
-        self.assertIsInstance(vector_variable, ng.p.Array)
-        self.assertFalse(isinstance(vector_variable, ng.p.Scalar))
-        self.assertListEqual(
-            upper_bound, list(vector_variable.bound_transform.a_max[0])
-        )
-        self.assertListEqual(
-            lower_bound, list(vector_variable.bound_transform.a_min[0])
-        )
-        self.assertIsInstance(vector_variable.bound_transform, ArctanBound)
+    def test_multi_objective(self):
 
-        with self.assertRaises(NevergradTypeError):
-            create_instrumentation_variable(1)
+        # test each objective function in turn...
+        for foo in self.functions_to_test:
+
+            # set kpis
+            self.multi_optimizer.kpis = foo.get_kpis()
+
+            # get Pareto set (of points in parameter space)
+            pareto = [
+                p for p in self.multi_optimizer.optimize_function(
+                        foo.objective, foo.get_params()
+                )
+            ]
+
+            # there should be more than one point in the Pareto-set
+            self.assertGreater(len(pareto), 1)
+
+            # are all the points in the Pareto set?
+            for p in pareto:
+                self.assertTrue(foo.is_pareto_optimal(p))
