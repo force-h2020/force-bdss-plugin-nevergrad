@@ -122,10 +122,10 @@ class TwoMinimaObjective:
         The Pareto set roughly extends is a straight line (as long
         as each Gaussian's is symmetric) between the centre's of
         the Gaussians. This roughly test's that: is the point within
-        a bounding box that contains the centres within a border of 0.2.
+        a bounding box that contains the centres within a border of 0.5.
         """
         xy = p[0]
         for i in range(2):
-            if (xy[i] < -1.2) or (xy[i] > 1.2):
+            if (xy[i] < -1.5) or (xy[i] > 1.5):
                 return False
         return True

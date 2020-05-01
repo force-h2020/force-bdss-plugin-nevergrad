@@ -1,8 +1,4 @@
-from unittest import TestCase, mock
-
-from force_bdss.api import (
-    KPISpecification,
-)
+from unittest import TestCase
 
 from force_nevergrad.engine.nevergrad_optimizers import (
     NevergradMultiOptimizer,
@@ -60,7 +56,8 @@ class TestNevergradOptimizer(TestCase):
                     self.assertEqual(len(parameter[0]), len(parameter[1]))
                     for i in range(len(parameter[0])):
                         self.assertAlmostEqual(parameter[0][i],
-                            parameter[1][i], places=tolerance)
+                                               parameter[1][i],
+                                               places=tolerance)
                 # parameter is a scalar
                 else:
                     self.assertAlmostEqual(parameter[0], parameter[1],

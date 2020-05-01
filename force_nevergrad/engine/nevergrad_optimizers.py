@@ -24,13 +24,13 @@ from nevergrad.functions import MultiobjectiveFunction
 
 
 def translate_mco_to_ng(params):
-    """ Translate from an MCO parameter specification
-    to a Nevergrad parameter specification ("Instrumentation").
+    r""" Translate from an MCO parameter specification
+    to a Nevergrad parameter specification (Instrumentation).
 
     Parameters
     ----------
     params: list of MCOParameter
-        The MCO parameter specification
+        The MCO parameter specification.
 
     Return
     ------
@@ -43,13 +43,13 @@ def translate_mco_to_ng(params):
     a dict of nevergrad parameter types. The keys of the dict are the
     names of the parameters.
     These list/dict is passed to the Instrumentation __init__ as
-    *vargs/*kwargs and they set the attributes called args/kwargs.
+    \*vargs/\*kwargs and they set the attributes called args/kwargs.
     The result of a nevergrad optimization is itself a Instrumentation object.
 
     As MCO objective functions (_score(), etc) take their parameters as a
     single list argument, rather than kwargs (i.e. parameters are indexed
-    by position) we must create the Instrumentation by *vargs. Also against
-    using *kwargs, is that MCO parameter names may not be unique (there is
+    by position) we must create the Instrumentation by \*vargs. Also against
+    using \*kwargs, is that MCO parameter names may not be unique (there is
     nothing to enforce this).
     """
 
