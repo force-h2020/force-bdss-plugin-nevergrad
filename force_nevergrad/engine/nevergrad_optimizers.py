@@ -51,6 +51,9 @@ def translate_mco_to_ng(params):
     by position) we must create the Instrumentation by \*vargs. Also against
     using \*kwargs, is that MCO parameter names may not be unique (there is
     nothing to enforce this).
+
+    We could do with making many of the paramterization arguments attributes
+    of the optimizer.
     """
 
     instru = []
@@ -69,7 +72,7 @@ def translate_mco_to_ng(params):
             ng_param.set_bounds(
                 lower=np.array(p.lower_bound),
                 upper=np.array(p.upper_bound),
-                method="constraint"
+                method="arctan"
             )
         elif isinstance(p, RangedMCOParameter):
             ng_param = ng.p.Scalar(
@@ -290,6 +293,7 @@ class NevergradMultiOptimizer(HasStrictTraits):
             The list of parameter values for a single member
             of the Pareto set.
         """
+
         # Create instrumentation.
         instrumentation = translate_mco_to_ng(params)
 
@@ -313,7 +317,7 @@ class NevergradMultiOptimizer(HasStrictTraits):
         # Create a MultiobjectiveFunction object from that.
         ob_func = MultiobjectiveFunction(
             multiobjective_function=ng_func,
-            upper_bounds=[k.scale_factor for k in self.kpis]
+            upper_bounds=np.array([k.scale_factor for k in self.kpis])
         )
 
         # Optimize. Ignore the return.

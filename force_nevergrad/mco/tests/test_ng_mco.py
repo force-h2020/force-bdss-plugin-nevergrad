@@ -46,11 +46,13 @@ class TestMCO(TestCase, UnittestTools):
             ),
             RangedMCOParameter(
                 mock.Mock(spec=RangedMCOParameterFactory),
+                lower_bound=0.0,
                 upper_bound=1.5,
                 n_samples=3,
             ),
             RangedVectorMCOParameter(
                 mock.Mock(spec=RangedVectorMCOParameterFactory),
+                lower_bound=[0.1],
                 upper_bound=[1.5],
                 n_samples=3,
             )
@@ -75,11 +77,12 @@ class TestMCO(TestCase, UnittestTools):
         model = self.factory.create_model()
         model.budget = 61
         model.parameters = self.parameters
-        model.kpis = [KPISpecification(), KPISpecification()]
+        model.kpis = [KPISpecification(scale_factor=1.0),
+                      KPISpecification(scale_factor=0.1)]
 
         workflow = Workflow()
         workflow.mco_model = model
-        kpis = [DataValue(value=1), DataValue(value=2)]
+        kpis = [DataValue(value=1), DataValue(value=5)]
         with self.assertTraitChanges(model, "event", count=0):
             with mock.patch(
                     "force_bdss.api.Workflow.execute", return_value=kpis
