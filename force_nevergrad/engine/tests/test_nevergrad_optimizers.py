@@ -3,6 +3,7 @@ from unittest import TestCase
 from force_nevergrad.engine.nevergrad_optimizers import (
     NevergradMultiOptimizer,
     NevergradScalarOptimizer,
+
 )
 
 from force_nevergrad.tests.probe_classes.optimizer import (
@@ -48,7 +49,7 @@ class TestNevergradOptimizer(TestCase):
             optimum = optimal[0]
 
             # the position of the actual global minimum of the objective
-            # and the number of decimal places we should be within.
+            # and the tolerance (allowable distance from)
             global_optimum, tolerance = foo.get_global_optimum()
 
             # is this the global optimum?
@@ -61,11 +62,11 @@ class TestNevergradOptimizer(TestCase):
                     for i in range(len(parameter[0])):
                         self.assertAlmostEqual(parameter[0][i],
                                                parameter[1][i],
-                                               places=tolerance)
+                                               delta=tolerance)
                 # parameter is a scalar
                 else:
                     self.assertAlmostEqual(parameter[0], parameter[1],
-                                           places=tolerance)
+                                           delta=tolerance)
 
     def test_multi_objective(self):
 

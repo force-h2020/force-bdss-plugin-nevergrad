@@ -53,15 +53,15 @@ class BaseObjective:
 
     @abstractmethod
     def get_global_optimum(self):
-        """ Get the psoition of the global minimum.
+        """ Get the position of the global minimum.
 
         Returns
         -------
         list of float/string/list
             The parameters at the global minimum
-        int
-            The tolerance (no. of places) that an optimizer should
-            reasonably be able to get to.
+        float
+            The tolerance (distance) that an optimizer should
+            reasonably be able to get to (for each numerical parameter)
         """
 
     @abstractmethod
@@ -159,7 +159,7 @@ class GridValleyObjective(BaseObjective):
                     i = x
                     j = y
 
-        return [i, j], 3
+        return [i, j], 0.05
 
     def is_pareto_optimal(self, p):
         return True
@@ -229,7 +229,7 @@ class TwoMinimaObjective(BaseObjective):
         """ The global minimum is the first Gaussian,
         with its centre at [-1, -1].
         """
-        return [[-1.0, -1.0]], 1
+        return [[-1.0, -1.0]], 0.1
 
     def is_pareto_optimal(self, p):
         """ The Pareto set roughly extends is a straight line (as long
