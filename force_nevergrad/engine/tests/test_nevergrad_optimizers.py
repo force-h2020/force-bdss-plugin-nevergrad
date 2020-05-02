@@ -6,7 +6,8 @@ from force_nevergrad.engine.nevergrad_optimizers import (
 )
 
 from force_nevergrad.tests.probe_classes.optimizer import (
-    TwoMinimaObjective
+    TwoMinimaObjective,
+    GridValleyObjective
 )
 
 
@@ -14,7 +15,10 @@ class TestNevergradOptimizer(TestCase):
     def setUp(self):
 
         # some objective functions to test
-        self.functions_to_test = [TwoMinimaObjective()]
+        self.functions_to_test = [
+            TwoMinimaObjective(),
+            GridValleyObjective()
+        ]
 
         # scalar- and multi-objective function optimizers
         self.scalar_optimizer = NevergradScalarOptimizer()
