@@ -7,17 +7,17 @@ from traits.api import (
     HasStrictTraits,
     List
 )
-from force_bdss.mco.parameters.mco_parameters import (
+
+from force_bdss.api import (
+    PositiveInt,
     FixedMCOParameter,
     RangedMCOParameter,
     RangedVectorMCOParameter,
     ListedMCOParameter,
     CategoricalMCOParameter,
+    KPISpecification,
+    IOptimizer
 )
-
-from force_bdss.api import PositiveInt
-from force_bdss.core.kpi_specification import KPISpecification
-from force_bdss.mco.optimizers.i_optimizer import IOptimizer
 
 import nevergrad as ng
 from nevergrad.functions import MultiobjectiveFunction

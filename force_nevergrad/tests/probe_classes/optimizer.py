@@ -2,12 +2,9 @@ import math
 import numpy as np
 from abc import abstractmethod
 
-from force_bdss.mco.parameters.mco_parameters import (
+from force_bdss.api import (
     RangedVectorMCOParameter,
     ListedMCOParameter,
-)
-
-from force_bdss.core.kpi_specification import (
     KPISpecification
 )
 
