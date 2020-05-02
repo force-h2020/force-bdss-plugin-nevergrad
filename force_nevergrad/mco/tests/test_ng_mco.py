@@ -2,6 +2,8 @@ from unittest import TestCase, mock
 
 from traits.testing.unittest_tools import UnittestTools
 
+from traitsui.api import View
+
 from force_bdss.api import (
     KPISpecification,
     Workflow,
@@ -58,6 +60,8 @@ class TestMCO(TestCase, UnittestTools):
     def test_mco_model(self):
         self.assertEqual(100, self.model.budget)
         self.assertEqual(True, self.model.verbose_run)
+        view = self.model.default_traits_view()
+        self.assertIsInstance(view, View)
 
     def test_mco_factory(self):
         self.assertIsInstance(self.factory, NevergradMCOFactory)
