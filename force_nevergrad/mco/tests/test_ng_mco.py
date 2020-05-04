@@ -52,5 +52,8 @@ class TestMCO(TestCase, UnittestTools):
         mco = self.factory.create_optimizer()
 
         # run the workflow and make sure model.notify_progress_event was fired
+        # (as this is returning the pareto-set and we don't know how many
+        # points are in the set, we don't know how many times it will be fired,
+        # so we leave out the count arg in assertTraitChanges)
         with self.assertTraitChanges(workflow.mco_model, "event"):
             mco.run(workflow)

@@ -1,8 +1,6 @@
 from unittest import TestCase
 import numpy as np
 
-from traits.trait_numeric import Array
-
 from force_nevergrad.engine.nevergrad_optimizers import (
     NevergradMultiOptimizer,
     NevergradScalarOptimizer,
@@ -16,12 +14,19 @@ from force_nevergrad.tests.probe_classes.optimizer import (
 )
 
 from force_bdss.mco.parameters.mco_parameters import (
-    BaseMCOParameter,
     FixedMCOParameter,
     RangedMCOParameter,
     RangedVectorMCOParameter,
     ListedMCOParameter,
     CategoricalMCOParameter
+)
+
+from force_nevergrad.tests.probe_classes.parameters import (
+    MyUnOrderedSetMCOParameter,
+    MyOrderedSetMCOParameter,
+    MyScalarMCOParameter,
+    MyVectorMCOParameter,
+    MyArrayMCOParameter,
 )
 
 
@@ -30,10 +35,6 @@ def flatten(x):
         return [a for i in x for a in flatten(i)]
     else:
         return [x]
-
-
-class MyArrayMCOParameter(BaseMCOParameter):
-    value = Array(shape=(3, 3))
 
 
 class TestNevergradOptimizer(TestCase):
@@ -55,33 +56,51 @@ class TestNevergradOptimizer(TestCase):
 
     def test_parametrization(self):
 
+        # 11 parameters, with no. of values = ...
         params = [
             FixedMCOParameter(
                 factory=None,
                 value=1.0
-            ),
+            ),                          # ... 1
             RangedMCOParameter(
                 factory=None,
                 initial_value=1.0
-            ),
+            ),                          # ... 1
             RangedVectorMCOParameter(
                 factory=None,
                 initial_value=[1.0 for i in range(10)]
-            ),
+            ),                          # ... 10
             ListedMCOParameter(
                 factory=None,
                 levels=[i for i in range(10)]
-            ),
+            ),                          # ... 1
             CategoricalMCOParameter(
                 factory=None,
                 categories=['a', 'b', 'c', 'd']
-            ),
+            ),                          # ... 1
+            MyUnOrderedSetMCOParameter(
+                factory=None,
+                set=['no', 'good', 'foo']
+            ),                          # ... 1
+            MyOrderedSetMCOParameter(
+                factory=None,
+                levels=['a', 'b', 'c']
+            ),                          # ... 1
+            MyScalarMCOParameter(
+                factory=None,
+                x0=0.0
+            ),                          # ... 1
+            MyVectorMCOParameter(
+                factory=None,
+                x0=np.zeros((5, ))
+            ),                          # ... 5
             MyArrayMCOParameter(
                 factory=None,
                 value=np.zeros((3, 3))
-            ),
-            86              # object
-        ]
+            ),                          # ... 9
+            86              # counts as "some other object"
+            #                           # ... 1
+        ]                               # sum = 32
 
         # translate to nevergrad
         instrumentation = translate_mco_to_ng(params)
@@ -90,22 +109,22 @@ class TestNevergradOptimizer(TestCase):
         mco_values = translate_ng_to_mco(instrumentation.args)
 
         # is the number of parameters correct?
-        self.assertEqual(7, len(mco_values))
+        self.assertEqual(11, len(mco_values))
 
         # is the total number of parameter values correct?
-        self.assertEqual(24, len(flatten(mco_values)))
+        self.assertEqual(32, len(flatten(mco_values)))
 
         # is the listed parameter value (index 3)
         # less than those allowed?
         self.assertLess(mco_values[3], 10)
 
-        # is the non-standard, 3x3 array parameter (index 5)
+        # is the non-standard, 3x3 array parameter (index 9)
         # converted to a [[],[],[]]?
-        self.assertEqual(3, len(mco_values[5]))
-        self.assertEqual(3, len(mco_values[5][0]))
+        self.assertEqual(3, len(mco_values[9]))
+        self.assertEqual(3, len(mco_values[9][0]))
 
         # is the non-recogisable parameter set to null constant?
-        self.assertEqual(mco_values[6], 'null')
+        self.assertEqual(mco_values[10], 'null')
 
     def test_scalar_objective(self):
 
