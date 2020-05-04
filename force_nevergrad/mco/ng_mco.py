@@ -24,17 +24,17 @@ class NevergradMCO(BaseMCO):
     def run(self, evaluator):
         model = evaluator.mco_model
 
-        optim = NevergradMultiOptimizer(
+        optimizer = NevergradMultiOptimizer(
             algorithms=model.algorithms,
             kpis=model.kpis,
             budget=model.budget)
 
-        optimizer = AposterioriOptimizerEngine(
+        engine = AposterioriOptimizerEngine(
             kpis=model.kpis,
             parameters=model.parameters,
             single_point_evaluator=evaluator,
             verbose_run=model.verbose_run,
-            optimizer=optim
+            optimizer=optimizer
         )
 
         formatter = logging.Formatter(
@@ -43,10 +43,9 @@ class NevergradMCO(BaseMCO):
         screen_handler = logging.StreamHandler(stream=sys.stdout)
         screen_handler.setFormatter(formatter)
         log.addHandler(screen_handler)
-        print('a0')
+
         for index, (optimal_point, optimal_kpis) \
-                in enumerate(optimizer.optimize()):
-            print('a1')
+                in enumerate(engine.optimize()):
             # When there is new data, this operation informs the system that
             # new data has been received. It must be a dictionary as given.
             log.info("Doing  MCO run # {}".format(index))

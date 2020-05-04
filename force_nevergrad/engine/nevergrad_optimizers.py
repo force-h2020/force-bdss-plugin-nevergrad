@@ -178,19 +178,19 @@ class NevergradMultiOptimizer(HasStrictTraits):
             The list of parameter values for a single member
             of the Pareto set.
         """
-        print('c0, func = ', func.__name__)
+
         # Create instrumentation.
         instrumentation = translate_mco_to_ng(params)
-        print('c1')
+
         # Create optimizer.
         optimizer = ng.optimizers.registry[self.algorithms](
             parametrization=instrumentation,
             budget=self.budget
         )
-        print('c2')
+
         # Minimization/maximization specification
         minimize_objectives = ['MINI' in k.objective for k in self.kpis]
-        print('c3, n objectives = ', len(minimize_objectives))
+
         # Create a multi-objective nevergrad function from
         # the MCO function.
         ng_func = partial(nevergrad_function,
@@ -198,16 +198,16 @@ class NevergradMultiOptimizer(HasStrictTraits):
                           is_scalar=False,
                           minimize_objectives=minimize_objectives
                           )
-        print('c4')
+
         # Create a MultiobjectiveFunction object from that.
         ob_func = MultiobjectiveFunction(
             multiobjective_function=ng_func,
             upper_bounds=np.array([k.scale_factor for k in self.kpis])
         )
-        print('c5')
+
         # Optimize. Ignore the return.
         optimizer.minimize(ob_func)
-        print('c6, length of pareto = ', len(ob_func.pareto_front()))
+
         # yield a member of the Pareto set.
         # x is a tuple - ((<vargs parameters>), {<kwargs parameters>})
         # return the vargs, translated into mco.

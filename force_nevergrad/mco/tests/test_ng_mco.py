@@ -5,25 +5,16 @@ from traits.testing.unittest_tools import UnittestTools
 from traitsui.api import View
 
 from force_bdss.api import (
-    KPISpecification,
-    Workflow,
-    DataValue,
-    FixedMCOParameterFactory,
-    ListedMCOParameterFactory,
-    RangedMCOParameterFactory,
-    FixedMCOParameter,
-    ListedMCOParameter,
-    RangedMCOParameter,
     CategoricalMCOParameterFactory,
     CategoricalMCOParameter,
-    RangedVectorMCOParameter,
-    RangedVectorMCOParameterFactory
 )
 
 from force_nevergrad.nevergrad_plugin import NevergradPlugin
 from force_nevergrad.mco.ng_mco import NevergradMCO
 from force_nevergrad.mco.ng_mco_factory import NevergradMCOFactory
 from force_nevergrad.mco.ng_mco_model import NevergradMCOModel
+
+from force_nevergrad.tests.probe_classes.workflow import ProbeWorkflow
 
 
 class TestMCO(TestCase, UnittestTools):
@@ -37,24 +28,6 @@ class TestMCO(TestCase, UnittestTools):
             CategoricalMCOParameter(
                 mock.Mock(spec=CategoricalMCOParameterFactory),
                 categories=["A", "B"],
-            ),
-            FixedMCOParameter(
-                mock.Mock(spec=FixedMCOParameterFactory), value=12.0
-            ),
-            ListedMCOParameter(
-                mock.Mock(spec=ListedMCOParameterFactory), levels=[0.1, 2.5]
-            ),
-            RangedMCOParameter(
-                mock.Mock(spec=RangedMCOParameterFactory),
-                lower_bound=0.0,
-                upper_bound=1.5,
-                n_samples=3,
-            ),
-            RangedVectorMCOParameter(
-                mock.Mock(spec=RangedVectorMCOParameterFactory),
-                lower_bound=[0.1],
-                upper_bound=[1.5],
-                n_samples=3,
             )
         ]
         self.model.parameters = self.parameters
@@ -73,19 +46,11 @@ class TestMCO(TestCase, UnittestTools):
         self.assertEqual(5, len(self.factory.get_parameter_factory_classes()))
 
     def test_simple_run(self):
-        mco = self.factory.create_optimizer()
-        model = self.factory.create_model()
-        model.budget = 61
-        model.parameters = self.parameters
-        model.kpis = [KPISpecification(scale_factor=1.0),
-                      KPISpecification(scale_factor=0.1)]
 
-        workflow = Workflow()
-        workflow.mco_model = model
-        kpis = [DataValue(value=1), DataValue(value=5)]
-        with self.assertTraitChanges(model, "event", count=0):
-            with mock.patch(
-                    "force_bdss.api.Workflow.execute", return_value=kpis
-            ) as mock_exec:
-                mco.run(workflow)
-                self.assertEqual(61, mock_exec.call_count)
+        # workflow and MCO to run it
+        workflow = ProbeWorkflow()
+        mco = self.factory.create_optimizer()
+
+        # run the workflow and make sure model.notify_progress_event was fired
+        with self.assertTraitChanges(workflow.mco_model, "event"):
+            mco.run(workflow)
