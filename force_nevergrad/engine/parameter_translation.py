@@ -103,7 +103,7 @@ def duck_type_param(param):
         )
     elif isinstance(v, np.ndarray):
         return ng.p.Array(
-            init=np.v,
+            init=v,
             mutable_sigma=True
         )
 

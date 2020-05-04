@@ -1,4 +1,7 @@
 from unittest import TestCase
+import numpy as np
+
+from traits.trait_numeric import Array
 
 from force_nevergrad.engine.nevergrad_optimizers import (
     NevergradMultiOptimizer,
@@ -29,8 +32,8 @@ def flatten(x):
         return [x]
 
 
-class MyOwnMCOParameter(BaseMCOParameter):
-    pass
+class MyArrayMCOParameter(BaseMCOParameter):
+    value = Array(shape=(3, 3))
 
 
 class TestNevergradOptimizer(TestCase):
@@ -73,9 +76,11 @@ class TestNevergradOptimizer(TestCase):
                 factory=None,
                 categories=['a', 'b', 'c', 'd']
             ),
-            MyOwnMCOParameter(
-                factory=None
-            )          # to test ducktyping
+            MyArrayMCOParameter(
+                factory=None,
+                value=np.zeros((3, 3))
+            ),
+            86              # object
         ]
 
         # translate to nevergrad
@@ -85,16 +90,22 @@ class TestNevergradOptimizer(TestCase):
         mco_values = translate_ng_to_mco(instrumentation.args)
 
         # is the number of parameters correct?
-        self.assertEqual(6, len(mco_values))
+        self.assertEqual(7, len(mco_values))
 
         # is the total number of parameter values correct?
-        self.assertEqual(15, len(flatten(mco_values)))
+        self.assertEqual(24, len(flatten(mco_values)))
 
-        # is the listed parameter value less than those allowed?
+        # is the listed parameter value (index 3)
+        # less than those allowed?
         self.assertLess(mco_values[3], 10)
 
-        # is the ducktyped parameter an ng.p.Constant 'null'?
-        self.assertEqual(mco_values[5], 'null')
+        # is the non-standard, 3x3 array parameter (index 5)
+        # converted to a [[],[],[]]?
+        self.assertEqual(3, len(mco_values[5]))
+        self.assertEqual(3, len(mco_values[5][0]))
+
+        # is the non-recogisable parameter set to null constant?
+        self.assertEqual(mco_values[6], 'null')
 
     def test_scalar_objective(self):
 
