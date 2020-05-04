@@ -13,6 +13,7 @@ from force_nevergrad.tests.probe_classes.optimizer import (
 )
 
 from force_bdss.mco.parameters.mco_parameters import (
+    BaseMCOParameter,
     FixedMCOParameter,
     RangedMCOParameter,
     RangedVectorMCOParameter,
@@ -26,6 +27,10 @@ def flatten(x):
         return [a for i in x for a in flatten(i)]
     else:
         return [x]
+
+
+class MyOwnMCOParameter(BaseMCOParameter):
+    pass
 
 
 class TestNevergradOptimizer(TestCase):
@@ -67,7 +72,10 @@ class TestNevergradOptimizer(TestCase):
             CategoricalMCOParameter(
                 factory=None,
                 categories=['a', 'b', 'c', 'd']
-            )
+            ),
+            MyOwnMCOParameter(
+                factory=None
+            )          # to test ducktyping
         ]
 
         # translate to nevergrad
@@ -77,13 +85,16 @@ class TestNevergradOptimizer(TestCase):
         mco_values = translate_ng_to_mco(instrumentation.args)
 
         # is the number of parameters correct?
-        self.assertEqual(5, len(mco_values))
+        self.assertEqual(6, len(mco_values))
 
         # is the total number of parameter values correct?
-        self.assertEqual(14, len(flatten(mco_values)))
+        self.assertEqual(15, len(flatten(mco_values)))
 
-        # is the chosen listed parameter less than those allowed?
+        # is the listed parameter value less than those allowed?
         self.assertLess(mco_values[3], 10)
+
+        # is the ducktyped parameter an ng.p.Constant 'null'?
+        self.assertEqual(mco_values[5], 'null')
 
     def test_scalar_objective(self):
 
