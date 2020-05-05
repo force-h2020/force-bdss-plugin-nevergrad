@@ -152,7 +152,7 @@ class NevergradMultiOptimizer(HasStrictTraits):
     """
 
     #: Algorithms available to work with
-    algorithms = Enum(*ng.optimizers.registry.keys())
+    algorithms = Enum(*ALGORITHMS_KEYS)
 
     #: Optimization budget defines the allowed number of objective calls
     budget = PositiveInt(500)
