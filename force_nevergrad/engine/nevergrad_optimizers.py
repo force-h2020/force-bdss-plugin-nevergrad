@@ -21,6 +21,8 @@ from .parameter_translation import (
 import nevergrad as ng
 from nevergrad.functions import MultiobjectiveFunction
 
+ALGORITHMS_KEYS = ng.optimizers.registry.keys()
+
 
 def nevergrad_function(*ng_params,
                        function=None,
@@ -87,7 +89,7 @@ class NevergradScalarOptimizer(HasStrictTraits):
     """
 
     #: Algorithms available to work with
-    algorithms = Enum(*ng.optimizers.registry.keys())
+    algorithms = Enum(*ALGORITHMS_KEYS)
 
     #: Optimization budget defines the allowed number of objective calls
     budget = PositiveInt(500)
@@ -200,10 +202,11 @@ class NevergradMultiOptimizer(HasStrictTraits):
                           )
 
         # Create a MultiobjectiveFunction object from that.
-        ob_func = MultiobjectiveFunction(
-            multiobjective_function=ng_func,
-            upper_bounds=np.array([k.scale_factor for k in self.kpis])
-        )
+        # Once we have defined an upper_bound attribute for KPIs we can
+        # then pass these (as a numpy array) to the upper_bounds argument
+        # of MultiobjectiveFunction.
+        # upper_bounds=np.array([k.upper_bound for k in self.kpis])
+        ob_func = MultiobjectiveFunction(multiobjective_function=ng_func)
 
         # Optimize. Ignore the return.
         optimizer.minimize(ob_func)
