@@ -3,7 +3,7 @@ from traitsui.api import View, Item
 
 from force_bdss.api import BaseMCOModel, PositiveInt
 
-from force_nevergrad.engine.nevergrad_engine import NevergradOptimizerEngine
+from force_nevergrad.engine.nevergrad_optimizers import ALGORITHMS_KEYS
 
 
 class NevergradMCOModel(BaseMCOModel):
@@ -11,9 +11,7 @@ class NevergradMCOModel(BaseMCOModel):
     data to configure the NevergradOptimizerEngine."""
 
     #: Algorithms available to work with
-    algorithms = Enum(
-        *NevergradOptimizerEngine.class_traits()["algorithms"].handler.values
-    )
+    algorithms = Enum(*ALGORITHMS_KEYS)
 
     #: Defines the allowed number of objective calls
     budget = PositiveInt(100)
@@ -21,12 +19,12 @@ class NevergradMCOModel(BaseMCOModel):
     #: Display the generated points at runtime
     verbose_run = Bool(True)
 
+    def _algorithms_default(self):
+        return "TwoPointsDE"
+
     def default_traits_view(self):
         return View(
             Item("algorithms"),
             Item("budget", label="Allowed number of objective calls"),
             Item("verbose_run"),
         )
-
-    def _algorithms_default(self):
-        return NevergradOptimizerEngine._algorithms_default(None)
