@@ -1,3 +1,6 @@
+#  (C) Copyright 2010-2020 Enthought, Inc., Austin, TX
+#  All rights reserved.
+
 from traits.api import Enum, Bool
 from traitsui.api import View, Item
 
