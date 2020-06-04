@@ -1,0 +1,108 @@
+{
+    "version": "1.1",
+    "workflow": {
+        "mco_model": {
+            "id": "force.bdss.nevergrad.plugin.wrapper.v0.factory.nevergrad_mco",
+            "model_data": {
+                "algorithms": "CMA",
+                "budget": 1000,
+                "verbose_run": true,
+                "parameters": [
+                    {
+                        "id": "force.bdss.nevergrad.plugin.wrapper.v0.factory.nevergrad_mco.parameter.ranged",
+                        "model_data": {
+                            "lower_bound": -5.0,
+                            "upper_bound": 5.0,
+                            "initial_value": 0.0,
+                            "n_samples": 5,
+                            "name": "x",
+                            "type": "COORDINATE"
+                        }
+                    },
+                    {
+                        "id": "force.bdss.nevergrad.plugin.wrapper.v0.factory.nevergrad_mco.parameter.ranged",
+                        "model_data": {
+                            "lower_bound": -5.0,
+                            "upper_bound": 5.0,
+                            "initial_value": 0.0,
+                            "n_samples": 5,
+                            "name": "y",
+                            "type": "COORDINATE"
+                        }
+                    }
+                ],
+                "kpis": [
+                    {
+                        "name": "a1",
+                        "objective": "MINIMISE",
+                        "auto_scale": false,
+                        "scale_factor": 1.0
+                    },
+                    {
+                        "name": "a2",
+                        "objective": "MINIMISE",
+                        "auto_scale": false,
+                        "scale_factor": 1.0
+                    }
+                ]
+            }
+        },
+        "execution_layers": [
+            {
+                "data_sources": [
+                    {
+                        "id": "force.bdss.enthought.plugin.troughs_waves.v0.factory.gaussian",
+                        "model_data": {
+                            "peak": -2.0,
+                            "cent_x": -1.0,
+                            "cent_y": -1.0,
+                            "sigm_x": 0.6,
+                            "sigm_y": 0.6,
+                            "input_slot_info": [
+                                {
+                                    "source": "Environment",
+                                    "name": "x"
+                                },
+                                {
+                                    "source": "Environment",
+                                    "name": "y"
+                                }
+                            ],
+                            "output_slot_info": [
+                                {
+                                    "name": "a1"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "force.bdss.enthought.plugin.troughs_waves.v0.factory.gaussian",
+                        "model_data": {
+                            "peak": -1.0,
+                            "cent_x": 1.0,
+                            "cent_y": 1.0,
+                            "sigm_x": 1.2,
+                            "sigm_y": 1.2,
+                            "input_slot_info": [
+                                {
+                                    "source": "Environment",
+                                    "name": "x"
+                                },
+                                {
+                                    "source": "Environment",
+                                    "name": "y"
+                                }
+                            ],
+                            "output_slot_info": [
+                                {
+                                    "name": "a2"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        ],
+        "notification_listeners": []
+    }
+}
