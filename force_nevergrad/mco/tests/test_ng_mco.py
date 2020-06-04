@@ -2,8 +2,6 @@
 #  All rights reserved.
 
 from unittest import TestCase, mock
-import os
-import sys
 from io import StringIO
 from unittest.mock import patch
 
@@ -13,15 +11,9 @@ from traitsui.api import View
 
 from force_bdss.api import (
     CategoricalMCOParameterFactory,
-    CategoricalMCOParameter,
-    BaseMCOCommunicator,
     DataValue,
     FixedMCOParameter,
-    RangedMCOParameter,
-    RangedVectorMCOParameter,
-    ListedMCOParameter,
     CategoricalMCOParameter
-
 )
 
 from force_nevergrad.nevergrad_plugin import NevergradPlugin
@@ -29,7 +21,6 @@ from force_nevergrad.mco.ng_mco import NevergradMCO
 from force_nevergrad.mco.ng_mco_factory import NevergradMCOFactory
 from force_nevergrad.mco.ng_mco_model import NevergradMCOModel
 from force_nevergrad.mco.ng_mco_communicator import NevergradMCOCommunicator
-import force_nevergrad.mco.ng_mco_communicator
 
 from force_nevergrad.tests.probe_classes.workflow import ProbeWorkflow
 
@@ -88,7 +79,7 @@ class TestMCO(TestCase, UnittestTools):
             FixedMCOParameter(value=0.0, factory=None),
         ]
         # ...only supply values for the first two parameters.
-        with patch('sys.stdin', StringIO('-1.0,-1.0')) as stdin:
+        with patch('sys.stdin', StringIO('-1.0,-1.0')):
             inputs = comm.receive_from_mco(self.model)
             # first two values should be set from stdin; remaining value
             # from parameter default.
