@@ -74,15 +74,11 @@ class NevergradMCOCommunicator(BaseMCOCommunicator):
 
             # if the parameter value is specified in the stdin, then take this
             # and attempt to convert it from string into the appropriate type.
-            q = v
-            if i < len(data):
-                try:
-                    q = type(v)(data[i])
-                except ValueError:
-                    pass
-
-            # append input
-            inputs.append(DataValue(value=q, name=param.name))
+            try:
+                q = type(v)(data[i])
+                inputs.append(DataValue(value=q, name=param.name))
+            except(ValueError, IndexError):
+                inputs.append(DataValue(value=v, name=param.name))
 
         return inputs
 

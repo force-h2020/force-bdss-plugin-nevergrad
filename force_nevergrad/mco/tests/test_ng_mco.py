@@ -13,7 +13,11 @@ from force_bdss.api import (
     CategoricalMCOParameterFactory,
     DataValue,
     FixedMCOParameter,
-    CategoricalMCOParameter
+    RangedMCOParameter,
+    RangedVectorMCOParameter,
+    ListedMCOParameter,
+    CategoricalMCOParameter,
+    BaseMCOParameter,
 )
 
 from force_nevergrad.nevergrad_plugin import NevergradPlugin
@@ -72,18 +76,26 @@ class TestMCO(TestCase, UnittestTools):
         comm = NevergradMCOCommunicator(self.factory)
 
         # receive_from_mco: get parameter values from stdin ....
-        # ...three model parameters
+        # ...five model parameters (of all flavors!)
         self.model.parameters = [
             FixedMCOParameter(value=0.0, factory=None),
-            FixedMCOParameter(value=0.0, factory=None),
-            FixedMCOParameter(value=0.0, factory=None),
+            RangedMCOParameter(initial_value=0.0, factory=None),
+            RangedVectorMCOParameter(initial_value=[0.0, 0.0], factory=None),
+            ListedMCOParameter(levels=[0.0, 0.0], factory=None),
+            CategoricalMCOParameter(categories=['a', 'b'], factory=None),
+            BaseMCOParameter(factory=None)
         ]
         # ...only supply values for the first two parameters.
         with patch('sys.stdin', StringIO('-1.0,-1.0')):
             inputs = comm.receive_from_mco(self.model)
-            # first two values should be set from stdin; remaining value
-            # from parameter default.
-            self.assertEqual([-1.0, -1.0, 0.0], [x.value for x in inputs])
+            # First two values should be set from stdin;
+            # Last value (BaseMCOParameter should be 0.0
+            # Remaining values should be set from parameter:
+            # initial value (ranged, etc) or first element (listed/categorical)
+            self.assertEqual(
+                [-1.0, -1.0, [0.0, 0.0], 0.0, 'a', 0.0],
+                [x.value for x in inputs]
+            )
 
         # send_to_mco: get kpis from stdout ....
         # ...two KPIs
