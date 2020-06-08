@@ -11,5 +11,5 @@ break > %~f3
 
 REM loop through the points to be evaluated (lines in the input file)
 FOR /F "tokens=*" %%A in (%~f1) do  (
-   echo %%A | edm run -e force-py36 -- force_bdss --evaluate %~f2 >> %~f3
+   echo %%A | force_bdss --evaluate %~f2 >> %~f3
 )

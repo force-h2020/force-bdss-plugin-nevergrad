@@ -20,30 +20,31 @@ class NevergradMCOCommunicator(BaseMCOCommunicator):
 
     Examples
     --------
+    Within an EDM environment:
     Evaluate the point (-1.0, 1.0) and write to output.txt,
 
-    echo 1.0,-1.0 | edm run -e force-py36 -- force_bdss
-    --evaluate gaussian.json > output.txt
+    echo 1.0,-1.0 | force_bdss --evaluate gaussian.json > output.txt
 
     Evaluate the point on the first line of input.txt and write to output.txt,
 
     Windows-native:
-    type input.txt | edm run -e force-py36 -- force_bdss
-    --evaluate gaussian.json > output.txt
+    type input.txt | force_bdss --evaluate gaussian.json > output.txt
 
     Mac/bash:
-    cat input.txt | edm run -e force-py36 -- force_bdss
-    --evaluate gaussian.json > output.txt
+    cat input.txt | force_bdss --evaluate gaussian.json > output.txt
 
-    If you are in the EDM force-py36 environment, then just leave out the
-    'edm run -e force-py36 --' part of the command.
+    When running outside the shell and its environment, prefix force-bdss
+    with: edm run -e environment-name --
 
     Notes
     -----
-    Can only evaluate a single point from stdin. If you want to evaluate
-    multiple points listed in a file, then you must write a script
-    that loops through the file's lines (one line per point) and evaluates
-    each one in turn. cf. evalf.cmd for a windows-native script.
+    Evaluate a single point in parameter space, from stdin, and return the KPIs
+    to stdout.
+    If you want to evaluate multiple points, either:
+    1) Write a `BaseMCO` that employs a `SubprocessWorkflow` to broadcast
+    points as stdin and waits for KPIs to return as stdout.
+    2) Write a bash pipe that iterates through sets of single points and
+    processes the output accordingly.
     """
 
     def receive_from_mco(self, model):
@@ -75,10 +76,10 @@ class NevergradMCOCommunicator(BaseMCOCommunicator):
             # if the parameter value is specified in the stdin, then take this
             # and attempt to convert it from string into the appropriate type.
             try:
-                q = type(v)(data[i])
-                inputs.append(DataValue(value=q, name=param.name))
+                v = type(v)(data[i])
             except(ValueError, IndexError):
-                inputs.append(DataValue(value=v, name=param.name))
+                pass
+            inputs.append(DataValue(value=v, name=param.name, type=param.type))
 
         return inputs
 
