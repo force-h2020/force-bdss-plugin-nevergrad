@@ -8,11 +8,11 @@ from force_bdss.api import (
     RangedMCOParameterFactory,
     RangedVectorMCOParameterFactory,
     CategoricalMCOParameterFactory,
-    BaseMCOCommunicator
 )
 
 from .ng_mco_model import NevergradMCOModel
 from .ng_mco import NevergradMCO
+from .ng_mco_communicator import NevergradMCOCommunicator
 
 
 class NevergradMCOFactory(BaseMCOFactory):
@@ -38,7 +38,7 @@ class NevergradMCOFactory(BaseMCOFactory):
 
     #: Returns the communicator class
     def get_communicator_class(self):
-        return BaseMCOCommunicator
+        return NevergradMCOCommunicator
 
     #: Factory classes of the parameters the MCO supports.
     def get_parameter_factory_classes(self):
