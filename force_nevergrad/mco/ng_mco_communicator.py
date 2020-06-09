@@ -60,15 +60,13 @@ class NevergradMCOCommunicator(BaseMCOCommunicator):
         for i, param in enumerate(model.parameters):
 
             # default value of parameter
-            if type(param) == FixedMCOParameter:
+            if isinstance(param, FixedMCOParameter):
                 v = param.value
-            elif type(param) == RangedMCOParameter:
+            elif isinstance(param, RangedMCOParameter):
                 v = param.initial_value
-            elif type(param) == RangedVectorMCOParameter:
-                v = param.initial_value
-            elif type(param) == ListedMCOParameter:
+            elif isinstance(param, ListedMCOParameter):
                 v = param.levels[0]
-            elif type(param) == CategoricalMCOParameter:
+            elif isinstance(param, CategoricalMCOParameter):
                 v = param.categories[0]
             else:
                 v = 0.0
