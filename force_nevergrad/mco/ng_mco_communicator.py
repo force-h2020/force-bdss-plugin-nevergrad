@@ -9,7 +9,6 @@ from force_bdss.api import (
     DataValue,
     FixedMCOParameter,
     RangedMCOParameter,
-    RangedVectorMCOParameter,
     ListedMCOParameter,
     CategoricalMCOParameter
 )
