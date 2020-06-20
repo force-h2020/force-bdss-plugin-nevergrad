@@ -134,9 +134,6 @@ class TestNevergradOptimizer(TestCase):
         # test each objective function in turn...
         for foo in self.functions_to_test:
 
-            # set kpis
-            self.scalar_optimizer.kpis = foo.get_kpis()
-
             # get optimal point
             optimal = [
                 p for p in self.scalar_optimizer.optimize_function(
@@ -172,9 +169,6 @@ class TestNevergradOptimizer(TestCase):
 
         # test each objective function in turn...
         for foo in self.functions_to_test:
-
-            # set kpis
-            self.multi_optimizer.kpis = foo.get_kpis()
 
             # get Pareto set (of points in parameter space)
             pareto = [

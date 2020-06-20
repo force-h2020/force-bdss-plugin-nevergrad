@@ -1,11 +1,15 @@
 #  (C) Copyright 2010-2020 Enthought, Inc., Austin, TX
 #  All rights reserved.
 
-import numpy as np
 from functools import partial
+
+import nevergrad as ng
+from nevergrad.functions import MultiobjectiveFunction
+import numpy as np
 
 from traits.api import (
     Enum,
+    Float,
     provides,
     HasStrictTraits,
     List
@@ -13,7 +17,6 @@ from traits.api import (
 
 from force_bdss.api import (
     PositiveInt,
-    KPISpecification,
     IOptimizer
 )
 
@@ -21,16 +24,13 @@ from .parameter_translation import (
     translate_mco_to_ng,
     translate_ng_to_mco
 )
-import nevergrad as ng
-from nevergrad.functions import MultiobjectiveFunction
 
 ALGORITHMS_KEYS = ng.optimizers.registry.keys()
 
 
 def nevergrad_function(*ng_params,
                        function=None,
-                       is_scalar=True,
-                       minimize_objectives=[]):
+                       is_scalar=True):
     """ A wrapper around the MCO objective function,
     that can be optimized by nevergrad.
 
@@ -43,9 +43,6 @@ def nevergrad_function(*ng_params,
     is_scalar: bool
         Whether or not the function should be scalar.
         (be a single-objective function).
-    minimize_objectives: list of bool
-        For each objective, whether it should be minimized
-        (as opposed to maximized).
 
     Return
     ------
@@ -56,10 +53,10 @@ def nevergrad_function(*ng_params,
     -----
     Nevergrad must optimize a function where each positional or
     keyword argument is a single parameter.
-    foo(p1, p2, p3, ...pN)
+        foo(p1, p2, p3, ...pN)
     MCO objective functions (_score(), etc.) have a single argument -
     the list of parameters.
-    foo([p1, p2, p3, ...pN])
+        foo([p1, p2, p3, ...pN])
     The types of the individual parameters are almost the same, in the
     nevergrad and MCO functions (but see translate_ng_to_mco()).
     Both nevergrad and MCO functions return the objectives/kpis as
@@ -72,12 +69,6 @@ def nevergrad_function(*ng_params,
 
     # call the MCO objective function
     objective = function(mco_params)
-
-    # negate any objectives that should be maximised
-    if len(minimize_objectives) == len(objective):
-        for i, do_minimize in enumerate(minimize_objectives):
-            if not do_minimize:
-                objective[i] = -objective[i]
 
     # if the objective needs to be scalar but it is not,
     # sum the objectives into a single objective.
@@ -96,11 +87,6 @@ class NevergradScalarOptimizer(HasStrictTraits):
 
     #: Optimization budget defines the allowed number of objective calls
     budget = PositiveInt(500)
-
-    #: A list of the output KPI parameters representing the objective(s)
-    kpis = List(KPISpecification, visible=False, transient=True)
-    # ...probably kpis should be passed as an arg to optimize_function()
-    # in future implementations. kpis are not a property of the optimizer!
 
     def _algorithms_default(self):
         return "TwoPointsDE"
@@ -121,6 +107,7 @@ class NevergradScalarOptimizer(HasStrictTraits):
         list of float or list:
             The list of optimal parameter values.
         """
+
         # Create instrumentation.
         instrumentation = translate_mco_to_ng(params)
 
@@ -130,15 +117,11 @@ class NevergradScalarOptimizer(HasStrictTraits):
             budget=self.budget
         )
 
-        # Minimization/maximization specification
-        minimize_objectives = ['MINI' in k.objective for k in self.kpis]
-
-        # Create a scalar objective nevergrad function from
+        # Create a scalar objective Nevergrad function from
         # the MCO function.
         ng_func = partial(nevergrad_function,
                           function=func,
-                          is_scalar=True,
-                          minimize_objectives=minimize_objectives
+                          is_scalar=True
                           )
 
         # Optimize.
@@ -160,13 +143,13 @@ class NevergradMultiOptimizer(HasStrictTraits):
     #: Optimization budget defines the allowed number of objective calls
     budget = PositiveInt(500)
 
-    #: A list of the output KPI parameters representing the objective(s)
-    kpis = List(KPISpecification, visible=False, transient=True)
+    #: List of upper bounds for KPI values
+    upper_bounds = List(Float, visible=False, transient=True)
 
     def _algorithms_default(self):
         return "TwoPointsDE"
 
-    def optimize_function(self, func, params):
+    def optimize_function(self, func, params, verbose_run=False):
         """ Minimize the passed multi-objective function.
 
         Parameters
@@ -176,6 +159,9 @@ class NevergradMultiOptimizer(HasStrictTraits):
             Takes a list of MCO parameter values.
         params: list of MCOParameter
             The MCO parameter objects corresponding to the parameters.
+        verbose_run: Bool, optional
+            Whether or not to return all points generated during the
+            optimization procedure, or just those on the Pareto front.
 
         Yields
         ------
@@ -193,29 +179,42 @@ class NevergradMultiOptimizer(HasStrictTraits):
             budget=self.budget
         )
 
-        # Minimization/maximization specification
-        minimize_objectives = ['MINI' in k.objective for k in self.kpis]
-
         # Create a multi-objective nevergrad function from
         # the MCO function.
         ng_func = partial(nevergrad_function,
                           function=func,
-                          is_scalar=False,
-                          minimize_objectives=minimize_objectives
+                          is_scalar=False
                           )
 
-        # Create a MultiobjectiveFunction object from that.
-        # Once we have defined an upper_bound attribute for KPIs we can
-        # then pass these (as a numpy array) to the upper_bounds argument
-        # of MultiobjectiveFunction.
-        # upper_bounds=np.array([k.upper_bound for k in self.kpis])
-        ob_func = MultiobjectiveFunction(multiobjective_function=ng_func)
+        # Create a MultiobjectiveFunction object. If KPI upper bounds
+        # are provided then pass them in as a keyword argument.
+        if self.upper_bounds:
+            kwargs = {"upper_bounds": self.upper_bounds}
+        else:
+            kwargs = {}
 
-        # Optimize. Ignore the return.
-        optimizer.minimize(ob_func)
+        ob_func = MultiobjectiveFunction(
+            multiobjective_function=ng_func,
+            **kwargs
+        )
+
+        # Perform minimization procedure. We use ask and tell API to
+        # be able to report all points, not just those on the Pareto
+        # front if verbose_run is True
+        for _ in range(optimizer.budget):
+            x = optimizer.ask()
+            value = ob_func.multiobjective_function(*x.args)
+            volume = ob_func.compute_aggregate_loss(
+                value, *x.args, **x.kwargs
+            )
+            optimizer.tell(x, volume)
+
+            if verbose_run:
+                yield x.args
 
         # yield a member of the Pareto set.
         # x is a tuple - ((<vargs parameters>), {<kwargs parameters>})
         # return the vargs, translated into mco.
-        for x in ob_func.pareto_front():
-            yield translate_ng_to_mco(list(x[0]))
+        if not verbose_run:
+            for x in ob_func.pareto_front():
+                yield translate_ng_to_mco(list(x[0]))
