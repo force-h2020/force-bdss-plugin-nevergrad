@@ -170,7 +170,7 @@ class TestNevergradOptimizer(TestCase):
                 # and therefore no way to control which optimum
                 # (global or local) is reached.
                 else:
-                    if foo.__class__.__name__ is 'GridValleyObjective':
+                    if foo.__class__.__name__ == 'GridValleyObjective':
                         continue
                     self.assertAlmostEqual(parameter[1], parameter[0],
                                            delta=tolerance)
