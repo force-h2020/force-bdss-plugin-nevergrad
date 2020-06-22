@@ -164,7 +164,14 @@ class TestNevergradOptimizer(TestCase):
                                                parameter[0][i],
                                                delta=tolerance)
                 # parameter is a scalar
+                # cannot test grid-valley objective, because the
+                # parameters are ListedMCOParameter; there is no
+                # way to set the initial index of such a parameter;
+                # and therefore no way to control which optimum
+                # (global or local) is reached.
                 else:
+                    if foo.__class__.__name__ is 'GridValleyObjective':
+                        continue
                     self.assertAlmostEqual(parameter[1], parameter[0],
                                            delta=tolerance)
 

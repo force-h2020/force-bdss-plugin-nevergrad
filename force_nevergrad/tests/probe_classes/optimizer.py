@@ -135,7 +135,7 @@ class GridValleyObjective(BaseObjective):
         # The global minimum is the point on the grid closest to this line.
         # As long as the angle is an improper fraction of pi, there should
         # only be one global minima.
-        alpha = math.pi / 2.9
+        alpha = math.pi / 2.218
 
         # rotated x coordinate (~distance from valley centre)
         x_r = x * math.cos(-alpha) - y * math.sin(-alpha)
