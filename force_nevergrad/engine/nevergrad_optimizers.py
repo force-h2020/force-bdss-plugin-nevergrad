@@ -3,6 +3,7 @@
 
 import numpy as np
 from functools import partial
+from copy import deepcopy
 
 from traits.api import (
     Enum,
@@ -71,7 +72,7 @@ def nevergrad_function(*ng_params,
     mco_params = translate_ng_to_mco(list(ng_params))
 
     # call the MCO objective function
-    objective = function(mco_params)
+    objective = deepcopy(function(mco_params))
 
     # negate any objectives that should be maximised
     if len(minimize_objectives) == len(objective):
@@ -83,6 +84,7 @@ def nevergrad_function(*ng_params,
     # sum the objectives into a single objective.
     if is_scalar and not np.isscalar(objective):
         return np.sum(objective)
+
     return objective
 
 
@@ -105,6 +107,15 @@ class NevergradScalarOptimizer(HasStrictTraits):
     def _algorithms_default(self):
         return "TwoPointsDE"
 
+    def get_optimizer(self, params):
+
+        instrumentation = translate_mco_to_ng(params)
+
+        return ng.optimizers.registry[self.algorithms](
+            parametrization=instrumentation,
+            budget=self.budget
+        )
+
     def optimize_function(self, func, params):
         """ Minimize the passed scalar function.
 
@@ -121,14 +132,8 @@ class NevergradScalarOptimizer(HasStrictTraits):
         list of float or list:
             The list of optimal parameter values.
         """
-        # Create instrumentation.
-        instrumentation = translate_mco_to_ng(params)
-
         # Create optimizer.
-        optimizer = ng.optimizers.registry[self.algorithms](
-            parametrization=instrumentation,
-            budget=self.budget
-        )
+        optimizer = self.get_optimizer(params)
 
         # Minimization/maximization specification
         minimize_objectives = ['MINI' in k.objective for k in self.kpis]
@@ -166,6 +171,19 @@ class NevergradMultiOptimizer(HasStrictTraits):
     def _algorithms_default(self):
         return "TwoPointsDE"
 
+    def get_optimizer(self, params):
+
+        instrumentation = translate_mco_to_ng(params)
+
+        return ng.optimizers.registry[self.algorithms](
+            parametrization=instrumentation,
+            budget=self.budget
+        )
+
+    def get_multiobjective_function(self, ng_func):
+
+        return MultiobjectiveFunction(multiobjective_function=ng_func)
+
     def optimize_function(self, func, params):
         """ Minimize the passed multi-objective function.
 
@@ -184,14 +202,8 @@ class NevergradMultiOptimizer(HasStrictTraits):
             of the Pareto set.
         """
 
-        # Create instrumentation.
-        instrumentation = translate_mco_to_ng(params)
-
         # Create optimizer.
-        optimizer = ng.optimizers.registry[self.algorithms](
-            parametrization=instrumentation,
-            budget=self.budget
-        )
+        optimizer = self.get_optimizer(params)
 
         # Minimization/maximization specification
         minimize_objectives = ['MINI' in k.objective for k in self.kpis]
@@ -209,7 +221,7 @@ class NevergradMultiOptimizer(HasStrictTraits):
         # then pass these (as a numpy array) to the upper_bounds argument
         # of MultiobjectiveFunction.
         # upper_bounds=np.array([k.upper_bound for k in self.kpis])
-        ob_func = MultiobjectiveFunction(multiobjective_function=ng_func)
+        ob_func = self.get_multiobjective_function(ng_func)
 
         # Optimize. Ignore the return.
         optimizer.minimize(ob_func)
