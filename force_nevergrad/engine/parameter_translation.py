@@ -69,10 +69,10 @@ def duck_type_param(param):
     Typing is done by matching the object's attributes against
     possible names (and types) that might suggest a particular nevergrad
     parameter object, in order of precedence:
-        unordered set (ng.p.Choice)
-        ordered set (ng.p.TransitionChoice)
-        scalar (ng.p.Scalar)
-        array (ng.p.Array)
+    unordered set (ng.p.Choice)
+    ordered set (ng.p.TransitionChoice)
+    scalar (ng.p.Scalar)
+    array (ng.p.Array)
     """
 
     # unordered set?

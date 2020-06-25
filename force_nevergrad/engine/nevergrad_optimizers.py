@@ -53,10 +53,10 @@ def nevergrad_function(*ng_params,
     -----
     Nevergrad must optimize a function where each positional or
     keyword argument is a single parameter.
-        foo(p1, p2, p3, ...pN)
+    foo(p1, p2, p3, ...pN)
     MCO objective functions (_score(), etc.) have a single argument -
     the list of parameters.
-        foo([p1, p2, p3, ...pN])
+    foo([p1, p2, p3, ...pN])
     The types of the individual parameters are almost the same, in the
     nevergrad and MCO functions (but see translate_ng_to_mco()).
     Both nevergrad and MCO functions return the objectives/kpis as
