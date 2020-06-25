@@ -2,190 +2,178 @@
 #  All rights reserved.
 
 from unittest import TestCase
+from unittest.mock import Mock, patch
 import numpy as np
+from functools import partial
 
 from force_nevergrad.engine.nevergrad_optimizers import (
+    nevergrad_function,
     NevergradMultiOptimizer,
     NevergradScalarOptimizer,
+)
+
+from force_nevergrad.engine.parameter_translation import (
     translate_mco_to_ng,
-    translate_ng_to_mco
 )
 
-from force_nevergrad.tests.probe_classes.optimizer import (
-    TwoMinimaObjective,
-    GridValleyObjective
+from force_nevergrad.tests.mock_classes.mock_optimizer import (
+    MockOptimizer,
+    MockMultiObjectiveFunction
 )
 
-from force_bdss.mco.parameters.mco_parameters import (
-    FixedMCOParameter,
-    RangedMCOParameter,
-    RangedVectorMCOParameter,
-    ListedMCOParameter,
-    CategoricalMCOParameter
-)
-
-from force_nevergrad.tests.probe_classes.parameters import (
-    MyUnOrderedSetMCOParameter,
-    MyOrderedSetMCOParameter,
-    MyScalarMCOParameter,
-    MyVectorMCOParameter,
-    MyArrayMCOParameter,
-)
-
-
-def flatten(x):
-    if isinstance(x, list):
-        return [a for i in x for a in flatten(i)]
-    else:
-        return [x]
+from nevergrad.optimization.base import Optimizer
+from nevergrad.functions import MultiobjectiveFunction
 
 
 class TestNevergradOptimizer(TestCase):
+
     def setUp(self):
 
-        # some objective functions to test
-        self.functions_to_test = [
-            TwoMinimaObjective(),
-            GridValleyObjective()
+        # mock 'MCO' parameters and instrumentation
+        self.params = [
+            Mock(**{'x0': 0.0}),
+            Mock(**{'value': np.zeros((3, 3))}),
         ]
+        self.instrumentation = translate_mco_to_ng(self.params)
 
-        # scalar- and multi-objective function optimizers
-        self.scalar_optimizer = NevergradScalarOptimizer()
-        self.multi_optimizer = NevergradMultiOptimizer()
+        # stub function
+        # return a different list (objective) each time, so that
+        # nevergrad_function() can negate the objective in-place
+        # and this doesn't change behaviour on another call.
+        self.m_foo = Mock(**{'side_effect': [[1, 2, 3] for _ in range(20)]})
 
-    def test_init(self):
-        self.assertEqual("TwoPointsDE", self.multi_optimizer.algorithms)
-        self.assertEqual(500, self.multi_optimizer.budget)
+    def test_nevergrad_function(self):
 
-    def test_parametrization(self):
+        # scalar (summed) objective
+        objective = nevergrad_function(
+            *[],
+            function=self.m_foo,
+            is_scalar=True,
+            minimize_objectives=[True, True, True]
+        )
+        self.assertEqual(objective, 6)
 
-        # 11 parameters, with no. of values = ...
-        params = [
-            FixedMCOParameter(
-                factory=None,
-                value=1.0
-            ),                          # ... 1
-            RangedMCOParameter(
-                factory=None,
-                initial_value=1.0
-            ),                          # ... 1
-            RangedVectorMCOParameter(
-                factory=None,
-                initial_value=[1.0 for i in range(10)]
-            ),                          # ... 10
-            ListedMCOParameter(
-                factory=None,
-                levels=[i for i in range(10)]
-            ),                          # ... 1
-            CategoricalMCOParameter(
-                factory=None,
-                categories=['a', 'b', 'c', 'd']
-            ),                          # ... 1
-            MyUnOrderedSetMCOParameter(
-                factory=None,
-                set=['no', 'good', 'foo']
-            ),                          # ... 1
-            MyOrderedSetMCOParameter(
-                factory=None,
-                levels=['a', 'b', 'c']
-            ),                          # ... 1
-            MyScalarMCOParameter(
-                factory=None,
-                x0=0.0
-            ),                          # ... 1
-            MyVectorMCOParameter(
-                factory=None,
-                x0=np.zeros((5, ))
-            ),                          # ... 5
-            MyArrayMCOParameter(
-                factory=None,
-                value=np.zeros((3, 3))
-            ),                          # ... 9
-            86              # counts as "some other object"
-            #                           # ... 1
-        ]                               # sum = 32
+        # maximize the 2nd objective
+        objective = nevergrad_function(
+            *[],
+            function=self.m_foo,
+            is_scalar=True,
+            minimize_objectives=[True, False, True]
+        )
+        self.assertEqual(objective, 2)
 
-        # translate to nevergrad
-        instrumentation = translate_mco_to_ng(params)
+        # multi-objective
+        objective = nevergrad_function(
+            *[],
+            function=self.m_foo,
+            is_scalar=False,
+            minimize_objectives=[True, False, True]
+        )
+        self.assertListEqual(objective, [1, -2, 3])
 
-        # translate back values
-        mco_values = translate_ng_to_mco(instrumentation.args)
-
-        # is the number of parameters correct?
-        self.assertEqual(11, len(mco_values))
-
-        # is the total number of parameter values correct?
-        self.assertEqual(32, len(flatten(mco_values)))
-
-        # is the listed parameter value (index 3)
-        # less than those allowed?
-        self.assertLess(mco_values[3], 10)
-
-        # is the non-standard, 3x3 array parameter (index 9)
-        # converted to a [[],[],[]]?
-        self.assertEqual(3, len(mco_values[9]))
-        self.assertEqual(3, len(mco_values[9][0]))
-
-        # is the non-recogisable parameter set to null constant?
-        self.assertEqual(mco_values[10], 'null')
-
-    def test_scalar_objective(self):
-
-        # test each objective function in turn...
-        for foo in self.functions_to_test:
-
-            # set kpis
-            self.scalar_optimizer.kpis = foo.get_kpis()
-
-            # get optimal point
-            optimal = [
-                p for p in self.scalar_optimizer.optimize_function(
-                    foo.objective, foo.get_params()
-                )
+    @patch.object(
+        NevergradScalarOptimizer,
+        'get_optimizer',
+        return_value=MockOptimizer(
+            params=[
+                Mock(**{'x0': 0.0}),
+                Mock(**{'value': np.zeros((3, 3))}),
             ]
+        )
+    )
+    def test_nevergrad_scalar_optimizer(self, mock_optimizer):
 
-            # there should only be one point
-            self.assertEqual(1, len(optimal))
-            optimum = optimal[0]
+        # IOptimizer that optimizes with MockOptimizer.minimize()
+        optimizer = NevergradScalarOptimizer()
 
-            # the position of the actual global minimum of the objective
-            # and the tolerance (allowable distance from)
-            global_optimum, tolerance = foo.get_global_optimum()
+        # default algorithm
+        self.assertEqual(optimizer._algorithms_default(), "TwoPointsDE")
 
-            # is this the global optimum?
-            self.assertEqual(len(global_optimum), len(optimum))
-            # ...compare parameter values
-            for parameter in zip(optimum, global_optimum):
-                # parameter is a list (RangedVector, Listed, Categorical)
-                if isinstance(parameter[0], list):
-                    self.assertEqual(len(parameter[1]), len(parameter[0]))
-                    for i in range(len(parameter[0])):
-                        self.assertAlmostEqual(parameter[1][i],
-                                               parameter[0][i],
-                                               delta=tolerance)
-                # parameter is a scalar
-                else:
-                    self.assertAlmostEqual(parameter[1], parameter[0],
-                                           delta=tolerance)
+        # optimize
+        count = 0
+        for x in optimizer.optimize_function(self.m_foo, [1.0]):
+            # x0 of first parameter
+            self.assertEqual(x[0], 0.0)
+            # value of second parameter
+            self.assertListEqual(
+                x[1],
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+            )
+            count += 1
 
-    def test_multi_objective(self):
+        # only one optimal point should be returned
+        self.assertEqual(count, 1)
 
-        # test each objective function in turn...
-        for foo in self.functions_to_test:
-
-            # set kpis
-            self.multi_optimizer.kpis = foo.get_kpis()
-
-            # get Pareto set (of points in parameter space)
-            pareto = [
-                p for p in self.multi_optimizer.optimize_function(
-                        foo.objective, foo.get_params()
-                )
+    @patch.object(
+        NevergradMultiOptimizer,
+        'get_optimizer',
+        return_value=MockOptimizer(
+            params=[
+                Mock(**{'x0': 0.0}),
+                Mock(**{'value': np.zeros((3, 3))}),
             ]
+        )
+    )
+    @patch.object(
+        NevergradMultiOptimizer,
+        'get_multiobjective_function',
+        return_value=MockMultiObjectiveFunction(
+            params=[
+                Mock(**{'x0': 0.0}),
+                Mock(**{'value': np.zeros((3, 3))}),
+            ],
+            pareto_size=10,
+        )
+    )
+    def test_nevergrad_multi_optimizer(self, mock1, mock2):
 
-            # there should be more than one point in the Pareto-set
-            self.assertGreater(len(pareto), 1)
+        # IOptimizer that optimizes with MockOptimizer.minimize()
+        # and returns a pareto front from MockMockMultiObjectiveFunction
+        optimizer = NevergradMultiOptimizer()
 
-            # are all the points in the Pareto set?
-            for p in pareto:
-                self.assertTrue(foo.is_pareto_optimal(p))
+        # default algorithm
+        self.assertEqual(optimizer._algorithms_default(), "TwoPointsDE")
+
+        # optimize
+        count = 0
+        for x in optimizer.optimize_function(self.m_foo, [1.0]):
+            # x0 of first parameter
+            self.assertEqual(x[0], 0.0)
+            # value of second parameter
+            self.assertListEqual(
+                x[1],
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+            )
+            count += 1
+
+        # ten points in Pareto front
+        self.assertEqual(count, 10)
+
+    def test_get_optimizer(self):
+
+        optimizer = NevergradScalarOptimizer()
+        ng_optimizer = optimizer.get_optimizer(self.params)
+        self.assertIsInstance(ng_optimizer, Optimizer)
+        self.assertEqual(ng_optimizer.dimension, 10)
+
+        optimizer = NevergradMultiOptimizer()
+        ng_optimizer = optimizer.get_optimizer(self.params)
+        self.assertIsInstance(ng_optimizer, Optimizer)
+        self.assertEqual(ng_optimizer.dimension, 10)
+
+    def test_get_multiobjective_function(self):
+
+        # optimizer
+        optimizer = NevergradMultiOptimizer()
+
+        # multi-objective
+        ng_func = partial(
+            nevergrad_function,
+            function=self.m_foo,
+            is_scalar=False,
+            minimize_objectives=[True, False, True]
+        )
+
+        # get multi-objective function object
+        multi_objective = optimizer.get_multiobjective_function(ng_func)
+        self.assertIsInstance(multi_objective, MultiobjectiveFunction)
