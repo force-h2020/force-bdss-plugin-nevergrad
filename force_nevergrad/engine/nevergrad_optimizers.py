@@ -3,7 +3,6 @@
 
 import numpy as np
 from functools import partial
-from copy import deepcopy
 
 from traits.api import (
     Enum,
@@ -72,7 +71,7 @@ def nevergrad_function(*ng_params,
     mco_params = translate_ng_to_mco(list(ng_params))
 
     # call the MCO objective function
-    objective = deepcopy(function(mco_params))
+    objective = function(mco_params)
 
     # negate any objectives that should be maximised
     if len(minimize_objectives) == len(objective):

@@ -37,7 +37,7 @@ class TestNevergradOptimizer(TestCase):
         self.instrumentation = translate_mco_to_ng(self.params)
 
         # stub function
-        self.m_foo = Mock(**{'return_value': [1, 2, 3]})
+        self.m_foo = Mock(**{'side_effect': [[1, 2, 3], [1, 2, 3]]*10})
 
     def test_nevergrad_function(self):
 
