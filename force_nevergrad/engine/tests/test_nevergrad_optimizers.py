@@ -4,6 +4,7 @@
 from unittest import TestCase
 from unittest.mock import Mock, patch
 import numpy as np
+from functools import partial
 
 from force_nevergrad.engine.nevergrad_optimizers import (
     nevergrad_function,
@@ -20,27 +21,30 @@ from force_nevergrad.tests.mock_classes.mock_optimizer import (
     MockMultiObjectiveFunction
 )
 
+from nevergrad.optimization.base import Optimizer
+from nevergrad.functions import MultiobjectiveFunction
+
 
 class TestNevergradOptimizer(TestCase):
 
     def setUp(self):
 
-        params = [
+        # mock 'MCO' parameters and instrumentation
+        self.params = [
             Mock(**{'x0': 0.0}),
             Mock(**{'value': np.zeros((3, 3))}),
         ]
+        self.instrumentation = translate_mco_to_ng(self.params)
 
-        self.instrumentation = translate_mco_to_ng(params)
+        # stub function
+        self.m_foo = Mock(**{'return_value': [1, 2, 3]})
 
     def test_nevergrad_function(self):
-
-        # function
-        m_foo = Mock(**{'return_value': [1, 2, 3]})
 
         # scalar (summed) objective
         objective = nevergrad_function(
             *[],
-            function=m_foo,
+            function=self.m_foo,
             is_scalar=True,
             minimize_objectives=[True, True, True]
         )
@@ -49,7 +53,7 @@ class TestNevergradOptimizer(TestCase):
         # maximize the 2nd objective
         objective = nevergrad_function(
             *[],
-            function=m_foo,
+            function=self.m_foo,
             is_scalar=True,
             minimize_objectives=[True, False, True]
         )
@@ -58,7 +62,7 @@ class TestNevergradOptimizer(TestCase):
         # multi-objective
         objective = nevergrad_function(
             *[],
-            function=m_foo,
+            function=self.m_foo,
             is_scalar=False,
             minimize_objectives=[True, False, True]
         )
@@ -82,12 +86,9 @@ class TestNevergradOptimizer(TestCase):
         # default algorithm
         self.assertEqual(optimizer._algorithms_default(), "TwoPointsDE")
 
-        # stub function
-        m_foo = Mock(**{'return_value': [1, 2, 3]})
-
         # optimize
         count = 0
-        for x in optimizer.optimize_function(m_foo, [1.0]):
+        for x in optimizer.optimize_function(self.m_foo, [1.0]):
             # x0 of first parameter
             self.assertEqual(x[0], 0.0)
             # value of second parameter
@@ -130,12 +131,9 @@ class TestNevergradOptimizer(TestCase):
         # default algorithm
         self.assertEqual(optimizer._algorithms_default(), "TwoPointsDE")
 
-        # stub function
-        m_foo = Mock(**{'return_value': [1, 2, 3]})
-
         # optimize
         count = 0
-        for x in optimizer.optimize_function(m_foo, [1.0]):
+        for x in optimizer.optimize_function(self.m_foo, [1.0]):
             # x0 of first parameter
             self.assertEqual(x[0], 0.0)
             # value of second parameter
@@ -147,3 +145,32 @@ class TestNevergradOptimizer(TestCase):
 
         # ten points in Pareto front
         self.assertEqual(count, 10)
+
+    def test_get_optimizer(self):
+
+        optimizer = NevergradScalarOptimizer()
+        ng_optimizer = optimizer.get_optimizer(self.params)
+        self.assertIsInstance(ng_optimizer, Optimizer)
+        self.assertEqual(ng_optimizer.dimension, 10)
+
+        optimizer = NevergradMultiOptimizer()
+        ng_optimizer = optimizer.get_optimizer(self.params)
+        self.assertIsInstance(ng_optimizer, Optimizer)
+        self.assertEqual(ng_optimizer.dimension, 10)
+
+    def test_get_multiobjective_function(self):
+
+        # optimizer
+        optimizer = NevergradMultiOptimizer()
+
+        # multi-objective
+        ng_func = partial(
+            nevergrad_function,
+            function=self.m_foo,
+            is_scalar=False,
+            minimize_objectives=[True, False, True]
+        )
+
+        # get multi-objective function object
+        multi_objective = optimizer.get_multiobjective_function(ng_func)
+        self.assertIsInstance(multi_objective, MultiobjectiveFunction)
