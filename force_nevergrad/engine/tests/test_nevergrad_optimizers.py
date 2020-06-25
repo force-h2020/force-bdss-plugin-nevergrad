@@ -37,6 +37,9 @@ class TestNevergradOptimizer(TestCase):
         self.instrumentation = translate_mco_to_ng(self.params)
 
         # stub function
+        # return a different list (objective) each time, so that
+        # nevergrad_function() can negate the objective in-place
+        # and this doesn't change behaviour on another call.
         self.m_foo = Mock(**{'side_effect': [[1, 2, 3], [1, 2, 3]]*10})
 
     def test_nevergrad_function(self):
