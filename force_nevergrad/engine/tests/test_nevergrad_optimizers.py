@@ -87,7 +87,7 @@ class TestNevergradOptimizer(TestCase):
 
         # optimize
         count = 0
-        for x in optimizer.optimize_function(m_foo, []):
+        for x in optimizer.optimize_function(m_foo, [1.0]):
             # x0 of first parameter
             self.assertEqual(x[0], 0.0)
             # value of second parameter
@@ -135,7 +135,7 @@ class TestNevergradOptimizer(TestCase):
 
         # optimize
         count = 0
-        for x in optimizer.optimize_function(m_foo, []):
+        for x in optimizer.optimize_function(m_foo, [1.0]):
             # x0 of first parameter
             self.assertEqual(x[0], 0.0)
             # value of second parameter
