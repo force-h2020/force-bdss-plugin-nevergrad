@@ -74,6 +74,7 @@ def nevergrad_function(*ng_params,
     # sum the objectives into a single objective.
     if is_scalar and not np.isscalar(objective):
         return np.sum(objective)
+
     return objective
 
 
@@ -91,6 +92,15 @@ class NevergradScalarOptimizer(HasStrictTraits):
     def _algorithms_default(self):
         return "TwoPointsDE"
 
+    def get_optimizer(self, params):
+
+        instrumentation = translate_mco_to_ng(params)
+
+        return ng.optimizers.registry[self.algorithms](
+            parametrization=instrumentation,
+            budget=self.budget
+        )
+
     def optimize_function(self, func, params):
         """ Minimize the passed scalar function.
 
@@ -107,15 +117,8 @@ class NevergradScalarOptimizer(HasStrictTraits):
         list of float or list:
             The list of optimal parameter values.
         """
-
-        # Create instrumentation.
-        instrumentation = translate_mco_to_ng(params)
-
         # Create optimizer.
-        optimizer = ng.optimizers.registry[self.algorithms](
-            parametrization=instrumentation,
-            budget=self.budget
-        )
+        optimizer = self.get_optimizer(params)
 
         # Create a scalar objective Nevergrad function from
         # the MCO function.
@@ -149,6 +152,19 @@ class NevergradMultiOptimizer(HasStrictTraits):
     def _algorithms_default(self):
         return "TwoPointsDE"
 
+    def get_optimizer(self, params):
+
+        instrumentation = translate_mco_to_ng(params)
+
+        return ng.optimizers.registry[self.algorithms](
+            parametrization=instrumentation,
+            budget=self.budget
+        )
+
+    def get_multiobjective_function(self, ng_func):
+
+        return MultiobjectiveFunction(multiobjective_function=ng_func)
+
     def optimize_function(self, func, params, verbose_run=False):
         """ Minimize the passed multi-objective function.
 
@@ -170,14 +186,8 @@ class NevergradMultiOptimizer(HasStrictTraits):
             of the Pareto set.
         """
 
-        # Create instrumentation.
-        instrumentation = translate_mco_to_ng(params)
-
         # Create optimizer.
-        optimizer = ng.optimizers.registry[self.algorithms](
-            parametrization=instrumentation,
-            budget=self.budget
-        )
+        optimizer = self.get_optimizer(params)
 
         # Create a multi-objective nevergrad function from
         # the MCO function.
@@ -186,35 +196,18 @@ class NevergradMultiOptimizer(HasStrictTraits):
                           is_scalar=False
                           )
 
-        # Create a MultiobjectiveFunction object. If KPI upper bounds
-        # are provided then pass them in as a keyword argument.
-        if self.upper_bounds:
-            kwargs = {"upper_bounds": self.upper_bounds}
-        else:
-            kwargs = {}
+        # Create a MultiobjectiveFunction object from that.
+        # Once we have defined an upper_bound attribute for KPIs we can
+        # then pass these (as a numpy array) to the upper_bounds argument
+        # of MultiobjectiveFunction.
+        # upper_bounds=np.array([k.upper_bound for k in self.kpis])
+        ob_func = self.get_multiobjective_function(ng_func)
 
-        ob_func = MultiobjectiveFunction(
-            multiobjective_function=ng_func,
-            **kwargs
-        )
-
-        # Perform minimization procedure. We use ask and tell API to
-        # be able to report all points, not just those on the Pareto
-        # front if verbose_run is True
-        for _ in range(optimizer.budget):
-            x = optimizer.ask()
-            value = ob_func.multiobjective_function(*x.args)
-            volume = ob_func.compute_aggregate_loss(
-                value, *x.args, **x.kwargs
-            )
-            optimizer.tell(x, volume)
-
-            if verbose_run:
-                yield x.args
+        # Optimize. Ignore the return.
+        optimizer.minimize(ob_func)
 
         # yield a member of the Pareto set.
         # x is a tuple - ((<vargs parameters>), {<kwargs parameters>})
         # return the vargs, translated into mco.
-        if not verbose_run:
-            for x in ob_func.pareto_front():
-                yield translate_ng_to_mco(list(x[0]))
+        for x in ob_func.pareto_front():
+            yield translate_ng_to_mco(list(x[0]))
