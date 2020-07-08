@@ -12,7 +12,8 @@ from traits.api import (
     Float,
     provides,
     HasStrictTraits,
-    List
+    List,
+    Union
 )
 
 from force_bdss.api import (
@@ -24,6 +25,7 @@ from .parameter_translation import (
     translate_mco_to_ng,
     translate_ng_to_mco
 )
+
 
 ALGORITHMS_KEYS = ng.optimizers.registry.keys()
 
@@ -147,10 +149,55 @@ class NevergradMultiOptimizer(HasStrictTraits):
     budget = PositiveInt(500)
 
     #: List of upper bounds for KPI values
-    upper_bounds = List(Float, visible=False, transient=True)
+    upper_bounds = List(Union(None, Float), visible=False, transient=True)
 
     def _algorithms_default(self):
         return "TwoPointsDE"
+
+    def _valid_upper_bounds(self):
+        """Returns whether or not the KPI upper bounds need to be
+        estimated prior to running the optimization proceedure.
+        """
+        # If no upper_bounds have been set, we need to estimate
+        if len(self.upper_bounds) == 0:
+            return False
+
+        # If any upper_bound values are not defined,
+        # we need to estimate
+        return all([value is not None for value in self.upper_bounds])
+
+    def _estimate_upper_bounds(self, optimizer, function):
+        """Uses Nevergrad's MultiobjectiveFunction.compute_aggregate_loss
+        protocol to estimate the upper bounds of each output KPI. This
+        is only needed if we have a mixture of KPIs that use bounds and
+        do not use bounds.
+        """
+
+        ob_func = MultiobjectiveFunction(
+            multiobjective_function=function)
+
+        # Prior estimate of upper_bounds ensures the calculated KPIs
+        # are always higher
+        upper_bounds = np.array([-np.inf])
+
+        # Calculate a small random sample of output KPI scores
+        for _ in range(15):
+            # Use the optimizer to generate a new input point
+            x = optimizer.ask()
+
+            # Calculate the KPI score values
+            value = ob_func.multiobjective_function(*x.args)
+            volume = ob_func.compute_aggregate_loss(
+                value, *x.args, **x.kwargs
+            )
+
+            # Keep track of the highest bound
+            upper_bounds = np.maximum(upper_bounds, value)
+
+            # Return no biased information to the optimizer
+            optimizer.tell(x, volume)
+
+        return upper_bounds.tolist()
 
     def get_optimizer(self, params):
 
@@ -161,9 +208,11 @@ class NevergradMultiOptimizer(HasStrictTraits):
             budget=self.budget
         )
 
-    def get_multiobjective_function(self, ng_func):
-
-        return MultiobjectiveFunction(multiobjective_function=ng_func)
+    def get_multiobjective_function(self, ng_func, upper_bounds=None):
+        return MultiobjectiveFunction(
+            multiobjective_function=ng_func,
+            upper_bounds=upper_bounds
+        )
 
     def optimize_function(self, func, params, verbose_run=False):
         """ Minimize the passed multi-objective function.
@@ -196,12 +245,22 @@ class NevergradMultiOptimizer(HasStrictTraits):
                           is_scalar=False
                           )
 
-        # Create a MultiobjectiveFunction object from that.
-        # Once we have defined an upper_bound attribute for KPIs we can
-        # then pass these (as a numpy array) to the upper_bounds argument
-        # of MultiobjectiveFunction.
-        # upper_bounds=np.array([k.upper_bound for k in self.kpis])
-        ob_func = self.get_multiobjective_function(ng_func)
+        # If a complete set of KPI upper bounds are defined, use them.
+        # Otherwise use Nevergrad to estimate those not defined
+        if self._valid_upper_bounds():
+            upper_bounds = self.upper_bounds
+        else:
+            # Estimate all KPI upper bounds
+            est_bounds = self._estimate_upper_bounds(optimizer, ng_func)
+
+            # And replace those not defined
+            upper_bounds = [
+                estimate if bound is None else bound
+                for estimate, bound in zip(est_bounds, self.upper_bounds)
+            ]
+
+        # Create a MultiobjectiveFunction object
+        ob_func = self.get_multiobjective_function(ng_func, upper_bounds)
 
         # Optimize. Ignore the return.
         optimizer.minimize(ob_func)
