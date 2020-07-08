@@ -114,7 +114,12 @@ class TestNevergradOptimizer(TestCase):
             pareto_size=10,
         )
     )
-    def test_nevergrad_multi_optimizer(self, mock1, mock2):
+    @patch.object(
+        NevergradMultiOptimizer,
+        '_estimate_upper_bounds',
+        return_value=[10, 10]
+    )
+    def test_nevergrad_multi_optimizer(self, mock1, mock2, mock3):
 
         # IOptimizer that optimizes with MockOptimizer.minimize()
         # and returns a pareto front from MockMockMultiObjectiveFunction
@@ -138,6 +143,35 @@ class TestNevergradOptimizer(TestCase):
         # ten points in Pareto front
         self.assertEqual(count, 10)
 
+        # Check MCO runs with both or one KPI upper bounds assigned
+        optimizer.upper_bounds = [None, 5]
+        results = list(optimizer.optimize_function(self.m_foo, [1.0]))
+        self.assertEqual(10, len(results))
+
+        optimizer.upper_bounds = [5, 5]
+        results = list(optimizer.optimize_function(self.m_foo, [1.0]))
+        self.assertEqual(10, len(results))
+
+    def test_valid_upper_bounds(self):
+        optimizer = NevergradMultiOptimizer()
+
+        self.assertFalse(optimizer._valid_upper_bounds())
+
+        optimizer.upper_bounds = [1.0, 1.0]
+        self.assertTrue(optimizer._valid_upper_bounds())
+
+        optimizer.upper_bounds = [None, 1.0]
+        self.assertFalse(optimizer._valid_upper_bounds())
+
+    def test_estimate_upper_bounds(self):
+        optimizer = NevergradMultiOptimizer()
+        ng_optimizer = optimizer.get_optimizer(self.params)
+
+        upper_bounds = optimizer._estimate_upper_bounds(
+            ng_optimizer, self.m_foo)
+
+        self.assertListEqual([1, 2, 3], upper_bounds)
+
     def test_get_optimizer(self):
 
         optimizer = NevergradScalarOptimizer()
@@ -148,7 +182,6 @@ class TestNevergradOptimizer(TestCase):
         optimizer = NevergradMultiOptimizer()
         ng_optimizer = optimizer.get_optimizer(self.params)
         self.assertIsInstance(ng_optimizer, Optimizer)
-        self.assertEqual(ng_optimizer.dimension, 10)
 
     def test_get_multiobjective_function(self):
 
