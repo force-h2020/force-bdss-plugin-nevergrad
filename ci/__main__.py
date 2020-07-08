@@ -6,8 +6,6 @@ import subprocess
 DEFAULT_PYTHON_VERSION = "3.6"
 PYTHON_VERSIONS = ["3.6"]
 
-_nevergrad_stable_commit = "5026eea6c44b83b114bcdb55f6254104d793e927"
-
 ADDITIONAL_CORE_DEPS = []
 
 ADDITIONAL_PIP_DEPS = [
