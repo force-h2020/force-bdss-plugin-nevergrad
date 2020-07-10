@@ -187,7 +187,7 @@ class NevergradMultiOptimizer(HasStrictTraits):
 
             # Calculate the KPI score values
             value = ob_func.multiobjective_function(*x.args)
-            volume = ob_func.compute_aggregate_loss(
+            ob_func.compute_aggregate_loss(
                 value, *x.args, **x.kwargs
             )
 
@@ -195,7 +195,7 @@ class NevergradMultiOptimizer(HasStrictTraits):
             upper_bounds = np.maximum(upper_bounds, value)
 
             # Return no biased information to the optimizer
-            optimizer.tell(x, volume)
+            optimizer.tell(x, 0)
 
         return upper_bounds.tolist()
 
