@@ -30,11 +30,14 @@ class NevergradOptimizerEngine(AposterioriOptimizerEngine):
         # If KPI objective is to maximise the value, then use
         # the lower bound attribute. Otherwise use the upper
         # bound attribute
-        kpi_bounds = [
-            kpi.lower_bound
-            if kpi.objective == 'MAXIMISE' else kpi.upper_bound
-            for kpi in self.kpis
-        ]
+        kpi_bounds = []
+        for kpi in self.kpis:
+            if kpi.objective == 'MINIMISE':
+                kpi_bounds.append(kpi.upper_bound)
+            elif kpi.objective == 'MAXIMISE':
+                kpi_bounds.append(kpi.lower_bound)
+            elif kpi.objective == 'TARGET':
+                kpi_bounds.append(kpi.target_value + kpi.upper_bound)
 
         # Transform the raw KPI bounds to the minimization score
         score_upper_bounds = self._minimization_score(kpi_bounds)
