@@ -121,7 +121,7 @@ class TestNevergradOptimizer(TestCase):
     )
     @patch.object(
         NevergradMultiOptimizer,
-        '_estimate_upper_bounds',
+        '_calculate_upper_bounds',
         return_value=[10, 10]
     )
     def test_nevergrad_multi_optimizer(self, mock1, mock2, mock3):
@@ -171,15 +171,16 @@ class TestNevergradOptimizer(TestCase):
     def test_estimate_upper_bounds(self):
         optimizer = NevergradMultiOptimizer()
         ng_optimizer = optimizer.get_optimizer(self.params)
+        optimizer.upper_bounds = [None, None, 10]
 
-        upper_bounds = optimizer._estimate_upper_bounds(
+        upper_bounds = optimizer._calculate_upper_bounds(
             ng_optimizer, self.m_foo)
 
-        self.assertListEqual([1, 2, 3], upper_bounds)
+        self.assertListEqual([1, 2, 10], upper_bounds)
 
         optimizer.bound_sample = 5
         with patch(AGGREGATE_LOSS_PATH) as mock_loss:
-            optimizer._estimate_upper_bounds(
+            optimizer._calculate_upper_bounds(
                 ng_optimizer, self.m_foo)
             self.assertEqual(5, mock_loss.call_count)
 
