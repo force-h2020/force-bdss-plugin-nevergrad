@@ -52,8 +52,9 @@ class TestNevergradOptimizerEngine(TestCase):
 
         kpis[0].objective = "TARGET"
         kpis[0].target_value = 1.5
+        kpis[0].upper_bound = 1.0
         self.assertListEqual(
-            [2.5, None], engine.score_upper_bounds())
+            [1.0, None], engine.score_upper_bounds())
 
 
 class TestMCO(TestCase, UnittestTools):

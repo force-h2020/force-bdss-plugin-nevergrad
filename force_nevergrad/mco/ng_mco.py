@@ -36,7 +36,7 @@ class NevergradOptimizerEngine(AposterioriOptimizerEngine):
                 kpi_bounds.append(kpi.upper_bound)
             elif kpi.objective == 'MAXIMISE':
                 kpi_bounds.append(kpi.lower_bound)
-            elif kpi.objective == 'TARGET':
+            else:
                 kpi_bounds.append(kpi.target_value + kpi.upper_bound)
 
         # Transform the raw KPI bounds to the minimization score
