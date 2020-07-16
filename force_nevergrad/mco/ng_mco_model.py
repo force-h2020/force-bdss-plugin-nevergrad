@@ -2,7 +2,7 @@
 #  All rights reserved.
 
 from traits.api import Enum, Bool
-from traitsui.api import View, Item
+from traitsui.api import View, Item, Group, VFold
 
 from force_bdss.api import BaseMCOModel, PositiveInt
 
@@ -19,6 +19,9 @@ class NevergradMCOModel(BaseMCOModel):
     #: Defines the allowed number of objective calls
     budget = PositiveInt(100)
 
+    #: Defines the sample size to estimate the KPI upper bounds
+    bound_sample = PositiveInt(15)
+
     #: Display the generated points at runtime
     verbose_run = Bool(True)
 
@@ -28,6 +31,17 @@ class NevergradMCOModel(BaseMCOModel):
     def default_traits_view(self):
         return View(
             Item("algorithms"),
-            Item("budget", label="Allowed number of objective calls"),
-            Item("verbose_run"),
+            Item("budget",
+                 label="Allowed number of objective calls"),
+            VFold(
+                Group(
+                    Item("bound_sample",
+                         label="Sample size for upper bound estimation",
+                         visible_when='advanced'),
+                    Item("verbose_run",
+                         label="Report all calculated points?",
+                         visible_when='advanced'),
+                    label='Advanced Options'
+                )
+            )
         )

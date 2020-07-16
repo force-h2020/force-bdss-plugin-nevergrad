@@ -114,13 +114,17 @@ class GridValleyObjective(BaseObjective):
                 name="slope1",
                 objective="MINIMISE",
                 auto_scale=False,
-                scale_factor=1.0
+                scale_factor=1.0,
+                lower_bound=0.5,
+                upper_bound=2.5
             ),
             KPISpecification(
                 name="slope2",
                 objective="MINIMISE",
                 auto_scale=False,
-                scale_factor=1.0
+                scale_factor=1.0,
+                lower_bound=0.5,
+                upper_bound=2.5
             )
         ]
 

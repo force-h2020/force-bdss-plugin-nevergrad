@@ -25,5 +25,4 @@ class ProbeWorkflow:
         self.mco_model.kpis = self.objective_function.get_kpis()
 
     def evaluate(self, parameter_values):
-
         return self.objective_function.objective(parameter_values)

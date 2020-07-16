@@ -17,16 +17,45 @@ from force_bdss.api import (
     RangedVectorMCOParameter,
     ListedMCOParameter,
     CategoricalMCOParameter,
-    BaseMCOParameter,
+    BaseMCOParameter
 )
 
 from force_nevergrad.nevergrad_plugin import NevergradPlugin
-from force_nevergrad.mco.ng_mco import NevergradMCO
+from force_nevergrad.mco.ng_mco import NevergradMCO, NevergradOptimizerEngine
 from force_nevergrad.mco.ng_mco_factory import NevergradMCOFactory
 from force_nevergrad.mco.ng_mco_model import NevergradMCOModel
 from force_nevergrad.mco.ng_mco_communicator import NevergradMCOCommunicator
 
 from force_nevergrad.tests.probe_classes.workflow import ProbeWorkflow
+
+
+class TestNevergradOptimizerEngine(TestCase):
+    def setUp(self):
+        self.model = ProbeWorkflow()
+
+    def test_score_upper_bounds(self):
+        kpis = self.model.mco_model.kpis
+        engine = NevergradOptimizerEngine(
+            kpis=kpis
+        )
+
+        self.assertListEqual(
+            [None, None], engine.score_upper_bounds())
+
+        kpis[0].use_bounds = True
+        self.assertListEqual(
+            [2.5, None], engine.score_upper_bounds())
+
+        kpis[0].objective = "MAXIMISE"
+        self.assertListEqual(
+            [-0.5, None], engine.score_upper_bounds())
+
+        kpis[0].objective = "TARGET"
+        kpis[0].target_value = 1.5
+        self.assertListEqual(
+            [1.0, None], engine.score_upper_bounds())
+
+        print(engine.score_upper_bounds())
 
 
 class TestMCO(TestCase, UnittestTools):
@@ -67,6 +96,22 @@ class TestMCO(TestCase, UnittestTools):
         # (as this is returning the pareto-set and we don't know how many
         # points are in the set, we don't know how many times it will be fired,
         # so we leave out the count arg in assertTraitChanges)
+        with self.assertTraitChanges(workflow.mco_model, "event"):
+            mco.run(workflow)
+
+        # Check upper bound assignments do not break workflow.
+        # One upper bound assigned by user, the other will be estimated
+        workflow.mco_model.kpis[0].use_bounds = True
+        with self.assertTraitChanges(workflow.mco_model, "event"):
+            mco.run(workflow)
+
+        # Both upper bounds assigned by user
+        workflow.mco_model.kpis[1].use_bounds = True
+        with self.assertTraitChanges(workflow.mco_model, "event"):
+            mco.run(workflow)
+
+        # Handle MAXIMISE KPI objectives
+        workflow.mco_model.kpis.objective = 'MAXIMISE'
         with self.assertTraitChanges(workflow.mco_model, "event"):
             mco.run(workflow)
 

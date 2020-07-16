@@ -66,13 +66,13 @@ def duck_type_param(param):
 
     Notes
     -----
-        Typing is done by matching the object's attributes against
-        possible names (and types) that might suggest a particular nevergrad
-        parameter object, in order of precedence:
-        unordered set (ng.p.Choice)
-        ordered set (ng.p.TransitionChoice)
-        scalar (ng.p.Scalar)
-        array (ng.p.Array)
+    Typing is done by matching the object's attributes against
+    possible names (and types) that might suggest a particular nevergrad
+    parameter object, in order of precedence:
+    unordered set (ng.p.Choice)
+    ordered set (ng.p.TransitionChoice)
+    scalar (ng.p.Scalar)
+    array (ng.p.Array)
     """
 
     # unordered set?
@@ -150,7 +150,6 @@ def translate_mco_to_ng(params):
     instru = []
     for p in params:
 
-        ng_param = None
         if isinstance(p, FixedMCOParameter):
             ng_param = ng.p.Constant(
                 value=p.value,
