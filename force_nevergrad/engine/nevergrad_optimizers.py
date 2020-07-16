@@ -169,7 +169,7 @@ class NevergradMultiOptimizer(HasStrictTraits):
         # we need to estimate
         return all([value is not None for value in self.upper_bounds])
 
-    def _estimate_upper_bounds(self, optimizer, function):
+    def _calculate_upper_bounds(self, optimizer, function):
         """Uses Nevergrad's MultiobjectiveFunction.compute_aggregate_loss
         protocol to estimate the upper bounds of each output KPI. This
         is only needed if we have a mixture of KPIs that use bounds and
@@ -200,7 +200,11 @@ class NevergradMultiOptimizer(HasStrictTraits):
             # Return no biased information to the optimizer
             optimizer.tell(x, 0)
 
-        return upper_bounds.tolist()
+        # And replace those not defined
+        return [
+            estimate if bound is None else bound
+            for estimate, bound in zip(upper_bounds, self.upper_bounds)
+        ]
 
     def get_optimizer(self, params):
 
@@ -254,22 +258,33 @@ class NevergradMultiOptimizer(HasStrictTraits):
             upper_bounds = self.upper_bounds
         else:
             # Estimate all KPI upper bounds
-            est_bounds = self._estimate_upper_bounds(optimizer, ng_func)
+            upper_bounds = self._calculate_upper_bounds(optimizer, ng_func)
 
-            # And replace those not defined
-            upper_bounds = [
-                estimate if bound is None else bound
-                for estimate, bound in zip(est_bounds, self.upper_bounds)
-            ]
-
-        # Create a MultiobjectiveFunction object
+        # Create a MultiobjectiveFunction object with assigned upper bounds
         ob_func = self.get_multiobjective_function(ng_func, upper_bounds)
 
-        # Optimize. Ignore the return.
-        optimizer.minimize(ob_func)
+        # Perform all calculations in the budget
+        for _ in range(self.budget):
+            # Use the optimizer to generate a new input point
+            x = optimizer.ask()
 
-        # yield a member of the Pareto set.
+            # Calculate the KPI score values
+            value = ob_func.multiobjective_function(*x.args)
+            volume = ob_func.compute_aggregate_loss(
+                value, *x.args, **x.kwargs
+            )
+
+            # Return hypervolume information to the optimizer
+            optimizer.tell(x, volume)
+
+            # If verbose, report back all points, not just those in
+            # Pareto front
+            if verbose_run:
+                yield translate_ng_to_mco(x.args)
+
+        # If not verbose, yield each member of the Pareto set.
         # x is a tuple - ((<vargs parameters>), {<kwargs parameters>})
         # return the vargs, translated into mco.
-        for x in ob_func.pareto_front():
-            yield translate_ng_to_mco(list(x[0]))
+        if not verbose_run:
+            for x in ob_func.pareto_front():
+                yield translate_ng_to_mco(list(x[0]))
