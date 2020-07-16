@@ -56,7 +56,6 @@ class TestNevergradOptimizerEngine(TestCase):
             [2.5, None], engine.score_upper_bounds())
 
 
-
 class TestMCO(TestCase, UnittestTools):
     def setUp(self):
         self.plugin = NevergradPlugin()
