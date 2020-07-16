@@ -148,6 +148,9 @@ class NevergradMultiOptimizer(HasStrictTraits):
     #: Optimization budget defines the allowed number of objective calls
     budget = PositiveInt(500)
 
+    #: Defines the sample size to estimate the KPI upper bounds
+    bound_sample = PositiveInt(15)
+
     #: List of upper bounds for KPI values
     upper_bounds = List(Union(None, Float), visible=False, transient=True)
 
@@ -181,7 +184,7 @@ class NevergradMultiOptimizer(HasStrictTraits):
         upper_bounds = np.array([-np.inf])
 
         # Calculate a small random sample of output KPI scores
-        for _ in range(15):
+        for _ in range(self.bound_sample):
             # Use the optimizer to generate a new input point
             x = optimizer.ask()
 

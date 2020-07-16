@@ -25,6 +25,11 @@ from nevergrad.optimization.base import Optimizer
 from nevergrad.functions import MultiobjectiveFunction
 
 
+AGGREGATE_LOSS_PATH = (
+    'force_nevergrad.engine.nevergrad_optimizers'
+    '.MultiobjectiveFunction.compute_aggregate_loss')
+
+
 class TestNevergradOptimizer(TestCase):
 
     def setUp(self):
@@ -40,7 +45,7 @@ class TestNevergradOptimizer(TestCase):
         # return a different list (objective) each time, so that
         # nevergrad_function() can negate the objective in-place
         # and this doesn't change behaviour on another call.
-        self.m_foo = Mock(**{'side_effect': [[1, 2, 3] for _ in range(20)]})
+        self.m_foo = Mock(side_effect=[[1, 2, 3] for _ in range(20)])
 
     def test_nevergrad_function(self):
 
@@ -171,6 +176,12 @@ class TestNevergradOptimizer(TestCase):
             ng_optimizer, self.m_foo)
 
         self.assertListEqual([1, 2, 3], upper_bounds)
+
+        optimizer.bound_sample = 5
+        with patch(AGGREGATE_LOSS_PATH) as mock_loss:
+            optimizer._estimate_upper_bounds(
+                ng_optimizer, self.m_foo)
+            self.assertEqual(5, mock_loss.call_count)
 
     def test_get_optimizer(self):
 

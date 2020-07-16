@@ -72,6 +72,7 @@ class NevergradMCO(BaseMCO):
         engine.optimizer = NevergradMultiOptimizer(
             algorithms=model.algorithms,
             budget=model.budget,
+            bound_sample=model.bound_sample,
             upper_bounds=upper_bounds
         )
 
