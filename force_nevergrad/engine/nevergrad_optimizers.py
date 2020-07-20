@@ -30,6 +30,51 @@ from .parameter_translation import (
 ALGORITHMS_KEYS = ng.optimizers.registry.keys()
 
 
+def _nevergrad_ask_tell(optimizer, ob_func, no_bias=False):
+    """Exposes the Nevergrad Optimizer ask and tell interface
+
+    Parameters
+    ----------
+    optimizer: nevergrad.Optimizer
+        Nevergrad Optimizer instance to perform optimization routine
+    ob_func: nevergrad.MultiobjectiveFunction
+        Nevergrad MultiobjectiveFunction instance to be optimized
+    no_bias: bool, optional
+        Whether or nor to calculate hyper-volume from objective
+        function value and return to optimizer
+
+    Returns
+    -------
+    x: nevergrad.Parameter
+        Parameter values determining input point to be calculated
+    value: float
+        Output value calculated from objective function
+    """
+
+    # Ask the optimizer for a new value
+    x = optimizer.ask()
+
+    # Calculate the optimizer objective score values
+    value = ob_func.multiobjective_function(*x.args)
+
+    # Update the objective function with the new value and
+    # compute the hyper-volume. If no_bias is enforced, then
+    # do not report any information to both optimizer or
+    # objective function
+    if no_bias:
+        volume = 0
+    else:
+        volume = ob_func.compute_aggregate_loss(
+            value, *x.args, **x.kwargs
+        )
+
+    # Tell hyper-volume information to the optimizer
+    optimizer.tell(x, volume)
+
+    # Return reference to both input and output values
+    return x, value
+
+
 def nevergrad_function(*ng_params,
                        function=None,
                        is_scalar=True):
@@ -185,20 +230,12 @@ class NevergradMultiOptimizer(HasStrictTraits):
 
         # Calculate a small random sample of output KPI scores
         for _ in range(self.bound_sample):
-            # Use the optimizer to generate a new input point
-            x = optimizer.ask()
-
-            # Calculate the KPI score values
-            value = ob_func.multiobjective_function(*x.args)
-            ob_func.compute_aggregate_loss(
-                value, *x.args, **x.kwargs
-            )
+            # Use the optimizer to generate a new input / output point
+            x, value = _nevergrad_ask_tell(
+                optimizer, ob_func, no_bias=True)
 
             # Keep track of the highest bound
             upper_bounds = np.maximum(upper_bounds, value)
-
-            # Return no biased information to the optimizer
-            optimizer.tell(x, 0)
 
         # And replace those not defined
         return [
@@ -209,7 +246,6 @@ class NevergradMultiOptimizer(HasStrictTraits):
     def get_optimizer(self, params):
 
         instrumentation = translate_mco_to_ng(params)
-
         return ng.optimizers.registry[self.algorithms](
             parametrization=instrumentation,
             budget=self.budget
@@ -265,17 +301,8 @@ class NevergradMultiOptimizer(HasStrictTraits):
 
         # Perform all calculations in the budget
         for _ in range(self.budget):
-            # Use the optimizer to generate a new input point
-            x = optimizer.ask()
-
-            # Calculate the KPI score values
-            value = ob_func.multiobjective_function(*x.args)
-            volume = ob_func.compute_aggregate_loss(
-                value, *x.args, **x.kwargs
-            )
-
-            # Return hypervolume information to the optimizer
-            optimizer.tell(x, volume)
+            # Generate and solve a new input point
+            x, _ = _nevergrad_ask_tell(optimizer, ob_func)
 
             # If verbose, report back all points, not just those in
             # Pareto front
