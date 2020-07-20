@@ -2,6 +2,7 @@
 #  All rights reserved.
 
 from functools import partial
+import logging
 
 import nevergrad as ng
 from nevergrad.functions import MultiobjectiveFunction
@@ -26,6 +27,8 @@ from .parameter_translation import (
     translate_ng_to_mco
 )
 
+
+log = logging.getLogger(__name__)
 
 ALGORITHMS_KEYS = ng.optimizers.registry.keys()
 
@@ -300,7 +303,9 @@ class NevergradMultiOptimizer(HasStrictTraits):
         ob_func = self.get_multiobjective_function(ng_func, upper_bounds)
 
         # Perform all calculations in the budget
-        for _ in range(self.budget):
+        for index in range(self.budget):
+            log.info("Doing  MCO run # {} / {}".format(index, self.budget))
+
             # Generate and solve a new input point
             x, _ = _nevergrad_ask_tell(optimizer, ob_func)
 
