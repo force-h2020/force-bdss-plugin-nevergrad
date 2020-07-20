@@ -90,7 +90,6 @@ class NevergradMCO(BaseMCO):
                 in enumerate(engine.optimize(verbose_run=model.verbose_run)):
             # When there is new data, this operation informs the system that
             # new data has been received. It must be a dictionary as given.
-            log.info("Doing  MCO run # {}".format(index))
             model.notify_progress_event(
                 [DataValue(value=v) for v in optimal_point],
                 [DataValue(value=v) for v in optimal_kpis],

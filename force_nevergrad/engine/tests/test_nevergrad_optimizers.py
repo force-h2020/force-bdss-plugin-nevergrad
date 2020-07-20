@@ -7,6 +7,7 @@ import numpy as np
 from functools import partial
 
 from force_nevergrad.engine.nevergrad_optimizers import (
+    _nevergrad_ask_tell,
     nevergrad_function,
     NevergradMultiOptimizer,
     NevergradScalarOptimizer,
@@ -17,6 +18,7 @@ from force_nevergrad.engine.parameter_translation import (
 )
 
 from force_nevergrad.tests.mock_classes.mock_optimizer import (
+    MockPoint,
     MockOptimizer,
     MockMultiObjectiveFunction
 )
@@ -25,9 +27,9 @@ from nevergrad.optimization.base import Optimizer
 from nevergrad.functions import MultiobjectiveFunction
 
 
-AGGREGATE_LOSS_PATH = (
+ASK_TELL_PATH = (
     'force_nevergrad.engine.nevergrad_optimizers'
-    '.MultiobjectiveFunction.compute_aggregate_loss')
+    '._nevergrad_ask_tell')
 
 
 class TestNevergradOptimizer(TestCase):
@@ -46,6 +48,24 @@ class TestNevergradOptimizer(TestCase):
         # nevergrad_function() can negate the objective in-place
         # and this doesn't change behaviour on another call.
         self.m_foo = Mock(side_effect=[[1, 2, 3] for _ in range(20)])
+
+    def test_nevergrad_ask_tell(self):
+
+        optimizer = MockOptimizer(params=self.params)
+        ob_func = MockMultiObjectiveFunction(params=self.params)
+
+        with patch.object(MockMultiObjectiveFunction,
+                          'compute_aggregate_loss') as mock_loss:
+
+            x, value = _nevergrad_ask_tell(optimizer, ob_func, no_bias=True)
+            self.assertListEqual([0, 1], x.args)
+            self.assertEqual(1, value)
+            mock_loss.assert_not_called()
+
+            x, value = _nevergrad_ask_tell(optimizer, ob_func)
+            self.assertListEqual([0, 1], x.args)
+            self.assertEqual(1, value)
+            mock_loss.assert_called()
 
     def test_nevergrad_function(self):
 
@@ -121,7 +141,7 @@ class TestNevergradOptimizer(TestCase):
     )
     @patch.object(
         NevergradMultiOptimizer,
-        '_estimate_upper_bounds',
+        '_calculate_upper_bounds',
         return_value=[10, 10]
     )
     def test_nevergrad_multi_optimizer(self, mock1, mock2, mock3):
@@ -171,17 +191,24 @@ class TestNevergradOptimizer(TestCase):
     def test_estimate_upper_bounds(self):
         optimizer = NevergradMultiOptimizer()
         ng_optimizer = optimizer.get_optimizer(self.params)
+        optimizer.upper_bounds = [None, None, 10]
 
-        upper_bounds = optimizer._estimate_upper_bounds(
-            ng_optimizer, self.m_foo)
+        with patch.object(MultiobjectiveFunction,
+                          'compute_aggregate_loss') as mock_loss:
+            upper_bounds = optimizer._calculate_upper_bounds(
+                ng_optimizer, self.m_foo)
 
-        self.assertListEqual([1, 2, 3], upper_bounds)
+            self.assertListEqual([1, 2, 10], upper_bounds)
+            mock_loss.assert_not_called()
 
         optimizer.bound_sample = 5
-        with patch(AGGREGATE_LOSS_PATH) as mock_loss:
-            optimizer._estimate_upper_bounds(
+        with patch(ASK_TELL_PATH) as mock_func:
+            mock_func.return_value = (
+                MockPoint(args=[0, 1], kwargs={}), 1)
+
+            optimizer._calculate_upper_bounds(
                 ng_optimizer, self.m_foo)
-            self.assertEqual(5, mock_loss.call_count)
+            self.assertEqual(5, mock_func.call_count)
 
     def test_get_optimizer(self):
 
