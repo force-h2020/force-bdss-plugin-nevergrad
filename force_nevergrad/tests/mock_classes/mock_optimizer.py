@@ -32,10 +32,10 @@ class MockMultiObjectiveFunction:
         self.pareto_size = pareto_size
 
     def multiobjective_function(self, *args):
-        return 0
+        return 1
 
     def compute_aggregate_loss(self, *args, **kwargs):
-        return 0
+        return 1
 
     def pareto_front(self):
         return [(self.ng_params.args, self.ng_params.kwargs)]*self.pareto_size
