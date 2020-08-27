@@ -6,7 +6,9 @@ import subprocess
 DEFAULT_PYTHON_VERSION = "3.6"
 PYTHON_VERSIONS = ["3.6"]
 
-ADDITIONAL_CORE_DEPS = []
+ADDITIONAL_CORE_DEPS = [
+    "traits>=6.1.0-1"
+]
 
 ADDITIONAL_PIP_DEPS = [
     "nevergrad==0.4.0"
